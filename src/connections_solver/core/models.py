@@ -5,7 +5,7 @@ from typing import List, Optional, Dict, Any
 from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 
-from connections_solver.constants import (
+from ..constants import (
     WORDS_PER_CATEGORY,
     NUM_CATEGORIES,
     TOTAL_WORDS,

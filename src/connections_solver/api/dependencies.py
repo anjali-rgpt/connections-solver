@@ -4,6 +4,7 @@ from functools import lru_cache
 
 from ..storage.base import BaseStorage
 from ..storage.memory import MemoryStorage
+from ..storage.sqlite import SQLiteStorage
 from ..config import settings
 
 
@@ -15,9 +16,9 @@ def get_storage() -> BaseStorage:
         Storage instance based on configuration
 
     Note:
-        For bare minimum implementation, only memory storage is supported.
         The lru_cache decorator ensures singleton behavior per process.
+        Supports both memory and SQLite storage backends.
     """
-    if settings.storage_type == "memory":
-        return MemoryStorage()
-    return MemoryStorage()  # Default fallback
+    if settings.storage_type == "sqlite":
+        return SQLiteStorage(db_path=settings.database_path)
+    return MemoryStorage()  # Default to memory storage

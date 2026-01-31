@@ -12,12 +12,14 @@ class Settings(BaseSettings):
         log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         cors_origins: Comma-separated list of allowed CORS origins
         storage_type: Type of storage to use ("memory" or "sqlite")
+        database_path: Path to SQLite database file (only used if storage_type is "sqlite")
     """
 
     environment: str = "development"
     log_level: str = "INFO"
     cors_origins: str = "http://localhost:3000,http://localhost:8000"
     storage_type: str = "memory"
+    database_path: str = "data/connections.db"
 
     class Config:
         """Pydantic configuration."""
