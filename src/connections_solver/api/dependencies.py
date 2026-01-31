@@ -2,9 +2,9 @@
 
 from functools import lru_cache
 
-from connections_solver.storage.base import BaseStorage
-from connections_solver.storage.memory import MemoryStorage
-from connections_solver.config import settings
+from ..storage.base import BaseStorage
+from ..storage.memory import MemoryStorage
+from ..config import settings
 
 
 @lru_cache()

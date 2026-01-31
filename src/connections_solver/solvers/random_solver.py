@@ -3,9 +3,9 @@
 import random
 from typing import List, Dict, Any
 
-from connections_solver.solvers.base import BaseSolver
-from connections_solver.solvers.registry import register_solver
-from connections_solver.core.models import PredictedCategory
+from .base import BaseSolver
+from .registry import register_solver
+from ..core.models import PredictedCategory
 
 
 @register_solver("random")

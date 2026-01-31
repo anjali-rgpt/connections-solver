@@ -2,8 +2,8 @@
 
 from typing import Dict, Type, Optional, Any
 
-from connections_solver.solvers.base import BaseSolver
-from connections_solver.core.exceptions import SolverNotFoundError
+from .base import BaseSolver
+from ..core.exceptions import SolverNotFoundError
 
 
 class SolverRegistry:

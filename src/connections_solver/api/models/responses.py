@@ -3,7 +3,7 @@
 from typing import List, Dict, Any
 from pydantic import BaseModel
 
-from connections_solver.core.models import (
+from ...core.models import (
     Puzzle,
     SolverResult,
     Evaluation,

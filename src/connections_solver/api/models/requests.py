@@ -4,7 +4,7 @@ from typing import Optional, Dict, Any
 from uuid import UUID
 from pydantic import BaseModel, Field
 
-from connections_solver.core.models import Solution
+from ...core.models import Solution
 
 
 class CreatePuzzleRequest(BaseModel):

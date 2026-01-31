@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 from uuid import UUID
 
-from connections_solver.core.models import Puzzle, SolverResult, Evaluation
+from ..core.models import Puzzle, SolverResult, Evaluation
 
 
 class BaseStorage(ABC):

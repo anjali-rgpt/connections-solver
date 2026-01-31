@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 import time
 
-from connections_solver.core.models import Puzzle, SolverResult, PredictedCategory
+from ..core.models import Puzzle, SolverResult, PredictedCategory
 
 
 class BaseSolver(ABC):

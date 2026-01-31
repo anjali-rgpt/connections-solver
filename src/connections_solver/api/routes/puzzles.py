@@ -3,13 +3,13 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from connections_solver.core.models import Puzzle
-from connections_solver.core.exceptions import PuzzleNotFoundError
-from connections_solver.logging_config import get_logger
-from connections_solver.storage.base import BaseStorage
-from connections_solver.api.dependencies import get_storage
-from connections_solver.api.models.requests import CreatePuzzleRequest
-from connections_solver.api.models.responses import PuzzleListResponse
+from ...core.models import Puzzle
+from ...core.exceptions import PuzzleNotFoundError
+from ...logging_config import get_logger
+from ...storage.base import BaseStorage
+from ..dependencies import get_storage
+from ..models.requests import CreatePuzzleRequest
+from ..models.responses import PuzzleListResponse
 
 logger = get_logger(__name__)
 

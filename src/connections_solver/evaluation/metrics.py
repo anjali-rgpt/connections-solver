@@ -2,7 +2,7 @@
 
 from typing import Set, List
 
-from connections_solver.core.models import (
+from ..core.models import (
     Category,
     PredictedCategory,
     CategoryEvaluation,

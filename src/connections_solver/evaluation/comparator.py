@@ -2,15 +2,15 @@
 
 from typing import List, Set
 
-from connections_solver.constants import NUM_CATEGORIES, TOTAL_WORDS
-from connections_solver.core.models import (
+from ..constants import NUM_CATEGORIES, TOTAL_WORDS
+from ..core.models import (
     Solution,
     SolverResult,
     EvaluationMetrics,
     Category,
     PredictedCategory,
 )
-from connections_solver.evaluation.metrics import (
+from .metrics import (
     find_best_matching_category,
     evaluate_category_match,
     is_exact_category_match,

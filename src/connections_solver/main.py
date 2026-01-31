@@ -3,16 +3,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from connections_solver.config import settings
-from connections_solver.logging_config import setup_logging, get_logger
-from connections_solver.api.routes import puzzles, solver, evaluation
+from .config import settings
+from .logging_config import setup_logging, get_logger
+from .api.routes import puzzles, solver, evaluation
 
 # Initialize logging
 setup_logging()
 logger = get_logger(__name__)
 
 # Initialize solvers (triggers registration)
-import connections_solver.solvers  # noqa: F401
+from . import solvers  # noqa: F401 # pylint: disable=unused-import
 
 # Create FastAPI application
 app = FastAPI(

@@ -3,13 +3,13 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from connections_solver.core.models import Evaluation
-from connections_solver.logging_config import get_logger
-from connections_solver.storage.base import BaseStorage
-from connections_solver.evaluation.comparator import compare_solver_result
-from connections_solver.api.dependencies import get_storage
-from connections_solver.api.models.requests import EvaluateRequest
-from connections_solver.api.models.responses import EvaluationListResponse
+from ...core.models import Evaluation
+from ...logging_config import get_logger
+from ...storage.base import BaseStorage
+from ...evaluation.comparator import compare_solver_result
+from ..dependencies import get_storage
+from ..models.requests import EvaluateRequest
+from ..models.responses import EvaluationListResponse
 
 logger = get_logger(__name__)
 

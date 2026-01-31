@@ -3,8 +3,8 @@
 from typing import Dict, List, Optional
 from uuid import UUID
 
-from connections_solver.core.models import Puzzle, SolverResult, Evaluation
-from connections_solver.storage.base import BaseStorage
+from ..core.models import Puzzle, SolverResult, Evaluation
+from .base import BaseStorage
 
 
 class MemoryStorage(BaseStorage):

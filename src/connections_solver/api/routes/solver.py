@@ -2,17 +2,17 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from connections_solver.core.models import SolverResult
-from connections_solver.core.exceptions import (
+from ...core.models import SolverResult
+from ...core.exceptions import (
     PuzzleNotFoundError,
     SolverNotFoundError,
 )
-from connections_solver.logging_config import get_logger
-from connections_solver.storage.base import BaseStorage
-from connections_solver.solvers.registry import SolverRegistry
-from connections_solver.api.dependencies import get_storage
-from connections_solver.api.models.requests import SolveRequest
-from connections_solver.api.models.responses import (
+from ...logging_config import get_logger
+from ...storage.base import BaseStorage
+from ...solvers.registry import SolverRegistry
+from ..dependencies import get_storage
+from ..models.requests import SolveRequest
+from ..models.responses import (
     SolverListResponse,
     SolverInfoResponse,
 )

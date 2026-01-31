@@ -8,11 +8,13 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables.
 
     Attributes:
+        environment: Environment name (development, production, etc.)
         log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         cors_origins: Comma-separated list of allowed CORS origins
         storage_type: Type of storage to use ("memory" or "sqlite")
     """
 
+    environment: str = "development"
     log_level: str = "INFO"
     cors_origins: str = "http://localhost:3000,http://localhost:8000"
     storage_type: str = "memory"

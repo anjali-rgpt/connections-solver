@@ -2,7 +2,7 @@
 
 import logging
 import sys
-from connections_solver.config import settings
+from .config import settings
 
 
 def setup_logging() -> None:
