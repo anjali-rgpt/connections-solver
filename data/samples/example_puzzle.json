@@ -1,0 +1,48 @@
+{
+  "words": [
+    "BASS",
+    "FLOUNDER",
+    "SALMON",
+    "TROUT",
+    "CLUB",
+    "DIAMOND",
+    "HEART",
+    "SPADE",
+    "DEAL",
+    "EXCHANGE",
+    "SWAP",
+    "TRADE",
+    "CATCH",
+    "HAUL",
+    "TAKE",
+    "REAP"
+  ],
+  "solution": {
+    "categories": [
+      {
+        "name": "FISH",
+        "words": ["BASS", "FLOUNDER", "SALMON", "TROUT"],
+        "difficulty": 1
+      },
+      {
+        "name": "CARD SUITS",
+        "words": ["CLUB", "DIAMOND", "HEART", "SPADE"],
+        "difficulty": 2
+      },
+      {
+        "name": "BARTER",
+        "words": ["DEAL", "EXCHANGE", "SWAP", "TRADE"],
+        "difficulty": 3
+      },
+      {
+        "name": "GET",
+        "words": ["CATCH", "HAUL", "TAKE", "REAP"],
+        "difficulty": 4
+      }
+    ]
+  },
+  "metadata": {
+    "source": "Example",
+    "date": "2024-01-15"
+  }
+}

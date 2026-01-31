@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: connections-solver-api
+    ports:
+      - "8000:8000"
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8000}
+      - STORAGE_TYPE=${STORAGE_TYPE:-memory}
+    volumes:
+      # Mount source code for development (hot reload)
+      - ./src:/app/src
+      - ./data:/app/data
+    command: uvicorn src.connections_solver.main:app --host 0.0.0.0 --port 8000 --reload
