@@ -1,24 +1,23 @@
-# Use Python 3.10 slim image
-FROM python:3.10-slim
+# Use Python 3.11 slim image
+FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1
+    PYTHONDONTWRITEBYTECODE=1
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Install UV
+RUN pip install --no-cache-dir uv
 
-# Install dependencies
-RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
-
-# Copy application code
+# Copy project files
+COPY pyproject.toml ./
 COPY src/ ./src/
 COPY data/ ./data/
+
+# Install dependencies using UV (system-wide in container)
+RUN uv pip install --system .
 
 # Expose port
 EXPOSE 8000

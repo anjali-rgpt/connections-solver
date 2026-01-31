@@ -26,6 +26,9 @@ ENV/
 env/
 .venv
 
+# UV lock file - DO NOT IGNORE (should be committed for reproducible builds)
+# uv.lock
+
 # IDEs
 .vscode/
 .idea/
