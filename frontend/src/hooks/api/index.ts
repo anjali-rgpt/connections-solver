@@ -5,3 +5,4 @@
 
 export { useSolvers } from './useSolvers';
 export { usePuzzle } from './usePuzzle';
+export { usePuzzles } from './usePuzzles';

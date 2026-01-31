@@ -191,3 +191,21 @@ export interface ListSolversResponse {
   /** Array of available solver types */
   solvers: SolverInfo[];
 }
+
+/**
+ * Response from the /puzzles endpoint.
+ * Returns paginated list of puzzles.
+ */
+export interface ListPuzzlesResponse {
+  /** Array of puzzles */
+  puzzles: Puzzle[];
+  
+  /** Total number of puzzles available */
+  total: number;
+  
+  /** Maximum number of puzzles per page */
+  limit: number;
+  
+  /** Number of puzzles skipped */
+  offset: number;
+}

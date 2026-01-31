@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from './client';
-import type { Puzzle, CreatePuzzleRequest } from '@/types/api';
+import type { Puzzle, CreatePuzzleRequest, ListPuzzlesResponse } from '@/types/api';
 
 /**
  * Creates a new puzzle with solution.
@@ -20,6 +20,19 @@ import type { Puzzle, CreatePuzzleRequest } from '@/types/api';
  */
 export const createPuzzle = (data: CreatePuzzleRequest) =>
   apiClient.post<Puzzle>('/puzzles', data);
+
+/**
+ * Lists all available puzzles.
+ *
+ * @returns Promise resolving to paginated puzzle list
+ *
+ * @example
+ * const response = await listPuzzles();
+ * console.log(response.data.puzzles); // [{ puzzle_id: '...', words: [...], ... }, ...]
+ * console.log(response.data.total); // Total number of puzzles
+ */
+export const listPuzzles = () =>
+  apiClient.get<ListPuzzlesResponse>('/puzzles');
 
 /**
  * Retrieves a specific puzzle by ID.

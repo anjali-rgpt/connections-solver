@@ -4,7 +4,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query';
-import { createPuzzle as createPuzzleApi } from '@/api/puzzles';
+import { createPuzzle as createPuzzleApi, getPuzzle } from '@/api/puzzles';
 import { solvePuzzle as solvePuzzleApi } from '@/api/solvers';
 import { evaluateSolve } from '@/api/evaluations';
 import { usePuzzleStore } from '@/stores/puzzleStore';
@@ -114,6 +114,42 @@ export const usePuzzle = () => {
   };
 
   /**
+   * Mutation for loading an existing puzzle by ID.
+   * Fetches the puzzle from the backend and updates the global store.
+   */
+  const loadPuzzle = useMutation({
+    mutationFn: async (puzzleId: string) => {
+      const response = await getPuzzle(puzzleId);
+      return response.data;
+    },
+    onSuccess: (puzzle) => {
+      setPuzzle(puzzle);
+    },
+    onError: (error) => {
+      console.error('Failed to load puzzle:', error);
+    },
+  });
+
+  /**
+   * Loads a puzzle and solves it with all available solvers.
+   *
+   * @param puzzleId - ID of puzzle to load
+   * @param solvers - Array of available solver information
+   *
+   * @example
+   * await loadAndSolvePuzzle('puzzle-id-123', availableSolvers);
+   */
+  const loadAndSolvePuzzle = async (puzzleId: string, solvers: SolverInfo[]) => {
+    try {
+      await loadPuzzle.mutateAsync(puzzleId);
+      await solveWithAllSolvers(puzzleId, solvers);
+    } catch (error) {
+      console.error('Failed to load and solve puzzle:', error);
+      throw error;
+    }
+  };
+
+  /**
    * Resets all puzzle state.
    * Clears current puzzle and all solver results.
    */
@@ -123,6 +159,8 @@ export const usePuzzle = () => {
 
   return {
     createPuzzle,
+    loadPuzzle,
+    loadAndSolvePuzzle,
     solvePuzzle,
     solveWithAllSolvers,
     reset,
