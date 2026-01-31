@@ -14,7 +14,11 @@ dependencies = [
     "python-multipart==0.0.6",
 ]
 
-[project.optional-dependencies]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
 dev = [
     "black==24.1.1",
     "ruff==0.1.14",
@@ -23,13 +27,6 @@ dev = [
     "pytest==7.4.3",
     "pytest-asyncio==0.21.1",
 ]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.uv]
-dev-dependencies = []
 
 [tool.black]
 line-length = 100

@@ -19,18 +19,20 @@ This solver enables:
 ## How to run it
 
 ### Prerequisites
-- Python 3.11+
-- [UV package manager](https://github.com/astral-sh/uv)
+None! The script handles everything.
 
-### Installation
+### One-command setup
 
 ```bash
-# Install UV
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Run the development server
 ./scripts/run_dev.sh
 ```
+
+This script automatically:
+- Installs UV package manager if needed
+- Installs Python 3.11 if needed (via UV)
+- Creates an isolated virtual environment (`.venv`)
+- Installs all dependencies
+- Starts the development server
 
 The API will be available at `http://localhost:8000`
 
