@@ -57,7 +57,7 @@ def evaluate_solver_result(
     metrics = compare_solver_result(solve, puzzle.solution)
 
     logger.info(
-        f"Evaluation completed: exact_matches={metrics.exact_matches}, "
+        f"Evaluation completed: category_matches={metrics.category_matches}/{metrics.total_categories}, "
         f"word_accuracy={metrics.word_accuracy:.2f}"
     )
 

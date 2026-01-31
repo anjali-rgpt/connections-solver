@@ -12,9 +12,9 @@ ENV PYTHONUNBUFFERED=1 \
 RUN pip install --no-cache-dir uv
 
 # Copy project files
-COPY pyproject.toml ./
-COPY src/ ./src/
-COPY data/ ./data/
+COPY pyproject.toml README.md ./
+COPY backend/src/ ./src/
+COPY backend/data/ ./data/
 
 # Install dependencies using UV (system-wide in container)
 RUN uv pip install --system .

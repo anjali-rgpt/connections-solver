@@ -4,3 +4,4 @@
  */
 
 export * from './LoadingSpinner';
+export * from './ProgressBar';

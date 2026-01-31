@@ -77,14 +77,14 @@ export const PuzzleForm: React.FC = () => {
 
     try {
       // Create puzzle
-      await createPuzzle.mutateAsync({
+      const puzzle = await createPuzzle.mutateAsync({
         words: allWords,
         solution,
       });
 
       // Solve with all available solvers in parallel
-      if (solversData?.solvers) {
-        await solveWithAllSolvers(solversData.solvers);
+      if (solversData?.solvers && puzzle) {
+        await solveWithAllSolvers(puzzle.puzzle_id, solversData.solvers);
       }
     } catch (error) {
       console.error('Failed to create puzzle or solve:', error);

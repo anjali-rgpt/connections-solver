@@ -34,25 +34,31 @@ const AppContent: React.FC = () => {
       <Header />
 
       {/* Main content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-6 py-8 max-w-4xl">
         {/* Loading state */}
         {isLoading && (
           <div className="text-center text-gray-600 py-12">
-            Loading solvers...
+            <div className="animate-pulse">
+              <p className="text-lg font-medium">Loading available solvers...</p>
+              <p className="text-sm mt-2">Preparing solver engines</p>
+            </div>
           </div>
         )}
 
         {/* Error state */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <p className="text-red-800 font-semibold">Failed to load solvers</p>
+          <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6 text-center">
+            <p className="text-red-800 font-bold text-lg">Failed to Load Solvers</p>
             <p className="text-red-600 text-sm mt-2">{error.message}</p>
+            <p className="text-red-500 text-xs mt-3">
+              Please check that the backend is running on port 8000
+            </p>
           </div>
         )}
 
-        {/* Solver grids */}
+        {/* Solver grids - Vertical single column layout */}
         {solversData?.solvers && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-6">
             {solversData.solvers.map((solver) => (
               <SolverGrid key={solver.name} solver={solver} />
             ))}
@@ -62,7 +68,8 @@ const AppContent: React.FC = () => {
         {/* Empty state */}
         {!isLoading && !error && !solversData?.solvers?.length && (
           <div className="text-center text-gray-500 py-12">
-            No solvers available
+            <p className="text-lg font-medium mb-2">No Solvers Available</p>
+            <p className="text-sm">No solver algorithms are configured in the backend</p>
           </div>
         )}
       </main>

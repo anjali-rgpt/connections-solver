@@ -62,23 +62,20 @@ export const usePuzzle = () => {
   });
 
   /**
-   * Solves the current puzzle with a specific solver.
+   * Solves a specific puzzle with a specific solver.
    * Automatically fetches evaluation after solving.
    *
+   * @param puzzleId - ID of puzzle to solve
    * @param solverType - Name of solver to use (e.g., "random", "embedding")
    */
-  const solvePuzzle = async (solverType: string) => {
-    if (!currentPuzzle) {
-      throw new Error('No puzzle loaded');
-    }
-
+  const solvePuzzle = async (puzzleId: string, solverType: string) => {
     try {
       // Set loading state
       setSolverLoading(solverType, true);
 
       // Execute solver
       const solveResponse = await solvePuzzleApi(
-        currentPuzzle.puzzle_id,
+        puzzleId,
         solverType
       );
       const solverResult = solveResponse.data;
@@ -99,19 +96,20 @@ export const usePuzzle = () => {
   };
 
   /**
-   * Solves the current puzzle with all available solvers in parallel.
+   * Solves a specific puzzle with all available solvers in parallel.
    * Uses Promise.allSettled to ensure all solvers complete even if some fail.
    *
+   * @param puzzleId - ID of puzzle to solve
    * @param solvers - Array of available solver information
    *
    * @example
    * const { data: solversData } = useSolvers();
    * if (solversData) {
-   *   await solveWithAllSolvers(solversData.solvers);
+   *   await solveWithAllSolvers(puzzleId, solversData.solvers);
    * }
    */
-  const solveWithAllSolvers = async (solvers: SolverInfo[]) => {
-    const promises = solvers.map((solver) => solvePuzzle(solver.name));
+  const solveWithAllSolvers = async (puzzleId: string, solvers: SolverInfo[]) => {
+    const promises = solvers.map((solver) => solvePuzzle(puzzleId, solver.name));
     await Promise.allSettled(promises);
   };
 

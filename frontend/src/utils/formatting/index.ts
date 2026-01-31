@@ -5,3 +5,4 @@
 
 export { formatPercentage } from './percentage';
 export { formatExecutionTime } from './time';
+export { formatSolverName } from './solverName';
