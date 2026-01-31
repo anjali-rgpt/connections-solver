@@ -2,6 +2,7 @@
 
 from typing import List, Set
 
+from connections_solver.constants import NUM_CATEGORIES, TOTAL_WORDS
 from connections_solver.core.models import (
     Solution,
     SolverResult,
@@ -58,17 +59,17 @@ def compare_solver_result(
                 exact_matches += 1
 
     # Calculate category-level accuracy
-    category_accuracy = exact_matches / 4.0  # Always 4 categories
+    category_accuracy = exact_matches / NUM_CATEGORIES
 
     # Calculate word-level accuracy
     correctly_grouped_words = _count_correctly_grouped_words(
         predicted_categories, true_categories
     )
-    word_accuracy = correctly_grouped_words / 16.0  # Always 16 words
+    word_accuracy = correctly_grouped_words / TOTAL_WORDS
 
     return EvaluationMetrics(
         accuracy=category_accuracy,
-        exact_match=(exact_matches == 4),
+        exact_match=(exact_matches == NUM_CATEGORIES),
         category_matches=exact_matches,
         word_accuracy=word_accuracy,
         correctly_grouped_words=correctly_grouped_words,
@@ -108,13 +109,16 @@ def _count_correctly_grouped_words(
                 correctly_grouped += 4  # All 4 words are correct
                 break
         else:
-            # No exact match - count individual correct words
-            # A word is correct if it appears in the same category as other words
-            # that are also in the same true category
+            # No exact match - find best matching true category
+            # This prevents double-counting when a predicted category
+            # overlaps with multiple true categories
+            best_match_size = 0
+            best_match_words = 0
             for true_set in true_category_sets:
-                words_in_both = predicted_set & true_set
-                # Only count if at least 1 word from true category is in prediction
-                if words_in_both:
-                    correctly_grouped += len(words_in_both)
+                overlap = len(predicted_set & true_set)
+                if overlap > best_match_size:
+                    best_match_size = overlap
+                    best_match_words = overlap
+            correctly_grouped += best_match_words
 
-    return min(correctly_grouped, 16)  # Cap at 16 words
+    return min(correctly_grouped, TOTAL_WORDS)

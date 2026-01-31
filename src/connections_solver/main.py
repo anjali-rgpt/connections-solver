@@ -4,7 +4,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from connections_solver.config import settings
+from connections_solver.logging_config import setup_logging, get_logger
 from connections_solver.api.routes import puzzles, solver, evaluation
+
+# Initialize logging
+setup_logging()
+logger = get_logger(__name__)
+
+# Initialize solvers (triggers registration)
+import connections_solver.solvers  # noqa: F401
 
 # Create FastAPI application
 app = FastAPI(
@@ -13,10 +21,16 @@ app = FastAPI(
     version="0.1.0",
 )
 
+logger.info("Starting Connections Solver API")
+logger.info(f"Environment: {settings.environment}")
+logger.info(f"Log level: {settings.log_level}")
+
 # Configure CORS
+cors_origins = settings.get_cors_origins_list()
+logger.info(f"CORS origins: {cors_origins}")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.get_cors_origins_list(),
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

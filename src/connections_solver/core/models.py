@@ -5,6 +5,12 @@ from typing import List, Optional, Dict, Any
 from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 
+from connections_solver.constants import (
+    WORDS_PER_CATEGORY,
+    NUM_CATEGORIES,
+    TOTAL_WORDS,
+)
+
 
 class Category(BaseModel):
     """Represents a category with 4 words and metadata.
@@ -16,8 +22,8 @@ class Category(BaseModel):
     """
 
     name: str
-    words: List[str] = Field(..., min_length=4, max_length=4)
-    difficulty: Optional[int] = Field(None, ge=1, le=4)
+    words: List[str] = Field(..., min_length=WORDS_PER_CATEGORY, max_length=WORDS_PER_CATEGORY)
+    difficulty: Optional[int] = Field(None, ge=1, le=NUM_CATEGORIES)
 
 
 class Solution(BaseModel):
@@ -27,7 +33,7 @@ class Solution(BaseModel):
         categories: List of exactly 4 categories, each with 4 words
     """
 
-    categories: List[Category] = Field(..., min_length=4, max_length=4)
+    categories: List[Category] = Field(..., min_length=NUM_CATEGORIES, max_length=NUM_CATEGORIES)
 
 
 class Puzzle(BaseModel):
@@ -42,7 +48,7 @@ class Puzzle(BaseModel):
     """
 
     puzzle_id: UUID = Field(default_factory=uuid4)
-    words: List[str] = Field(..., min_length=16, max_length=16)
+    words: List[str] = Field(..., min_length=TOTAL_WORDS, max_length=TOTAL_WORDS)
     solution: Solution
     metadata: Optional[Dict[str, Any]] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -56,7 +62,7 @@ class PredictedCategory(BaseModel):
         confidence: Optional confidence score (0.0 to 1.0)
     """
 
-    words: List[str] = Field(..., min_length=4, max_length=4)
+    words: List[str] = Field(..., min_length=WORDS_PER_CATEGORY, max_length=WORDS_PER_CATEGORY)
     confidence: Optional[float] = Field(None, ge=0.0, le=1.0)
 
 
@@ -77,7 +83,7 @@ class SolverResult(BaseModel):
     puzzle_id: UUID
     solver_type: str
     predicted_categories: List[PredictedCategory] = Field(
-        ..., min_length=4, max_length=4
+        ..., min_length=NUM_CATEGORIES, max_length=NUM_CATEGORIES
     )
     execution_time_ms: float
     solver_config: Optional[Dict[str, Any]] = None
@@ -116,11 +122,11 @@ class EvaluationMetrics(BaseModel):
 
     accuracy: float = Field(..., ge=0.0, le=1.0)
     exact_match: bool
-    category_matches: int = Field(..., ge=0, le=4)
-    total_categories: int = 4
+    category_matches: int = Field(..., ge=0, le=NUM_CATEGORIES)
+    total_categories: int = NUM_CATEGORIES
     word_accuracy: float = Field(..., ge=0.0, le=1.0)
-    correctly_grouped_words: int = Field(..., ge=0, le=16)
-    total_words: int = 16
+    correctly_grouped_words: int = Field(..., ge=0, le=TOTAL_WORDS)
+    total_words: int = TOTAL_WORDS
     per_category_scores: List[CategoryEvaluation]
 
 

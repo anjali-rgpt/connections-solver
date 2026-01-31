@@ -7,27 +7,17 @@ from connections_solver.storage.memory import MemoryStorage
 from connections_solver.config import settings
 
 
-# Global storage instance (singleton for in-memory storage)
-_storage_instance: BaseStorage = None  # type: ignore
-
-
 @lru_cache()
 def get_storage() -> BaseStorage:
-    """Get the storage instance (singleton pattern).
+    """Get the storage instance (cached singleton).
 
     Returns:
         Storage instance based on configuration
 
     Note:
         For bare minimum implementation, only memory storage is supported.
+        The lru_cache decorator ensures singleton behavior per process.
     """
-    global _storage_instance  # pylint: disable=global-statement
-
-    if _storage_instance is None:
-        if settings.storage_type == "memory":
-            _storage_instance = MemoryStorage()
-        else:
-            # Default to memory storage
-            _storage_instance = MemoryStorage()
-
-    return _storage_instance
+    if settings.storage_type == "memory":
+        return MemoryStorage()
+    return MemoryStorage()  # Default fallback

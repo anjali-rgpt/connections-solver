@@ -5,10 +5,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from connections_solver.core.models import Puzzle
 from connections_solver.core.exceptions import PuzzleNotFoundError
+from connections_solver.logging_config import get_logger
 from connections_solver.storage.base import BaseStorage
 from connections_solver.api.dependencies import get_storage
 from connections_solver.api.models.requests import CreatePuzzleRequest
 from connections_solver.api.models.responses import PuzzleListResponse
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/puzzles", tags=["puzzles"])
 
@@ -37,6 +40,7 @@ def create_puzzle(
     )
 
     stored_puzzle = storage.store_puzzle(puzzle)
+    logger.info(f"Puzzle created: puzzle_id={stored_puzzle.puzzle_id}")
     return stored_puzzle
 
 
@@ -60,11 +64,13 @@ def get_puzzle(
     puzzle = storage.get_puzzle(puzzle_id)
 
     if puzzle is None:
+        logger.warning(f"Puzzle not found: {puzzle_id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Puzzle {puzzle_id} not found",
         )
 
+    logger.info(f"Puzzle retrieved: puzzle_id={puzzle_id}")
     return puzzle
 
 
