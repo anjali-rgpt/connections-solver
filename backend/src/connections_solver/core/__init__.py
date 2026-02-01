@@ -1,5 +1,5 @@
 """Core domain models and exceptions."""
-from connections_solver.core.models import (
+from .models import (
     Category,
     Solution,
     Puzzle,
@@ -9,7 +9,7 @@ from connections_solver.core.models import (
     EvaluationMetrics,
     Evaluation,
 )
-from connections_solver.core.exceptions import (
+from .exceptions import (
     SolverNotFoundError,
     PuzzleNotFoundError,
 )

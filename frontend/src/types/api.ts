@@ -75,6 +75,87 @@ export interface PredictedCategory {
 }
 
 /**
+ * Visualization coordinates for a single word in 2D space.
+ * Used by cluster solver to show word relationships.
+ */
+export interface WordVisualizationPoint {
+  /** The word being visualized */
+  word: string;
+
+  /** X coordinate in 2D projection */
+  x: number;
+
+  /** Y coordinate in 2D projection */
+  y: number;
+
+  /** Cluster assignment (0-3) */
+  cluster: number;
+}
+
+/**
+ * Cluster solver metadata for explainability.
+ * Provides insight into algorithm selection and cluster quality.
+ */
+export interface ClusterSolverMetadata {
+  /** Information about which clustering algorithm was chosen and why */
+  algorithm_selection: {
+    /** Selected algorithm: kmeans, agglomerative, or dbscan */
+    chosen: 'kmeans' | 'agglomerative' | 'dbscan';
+
+    /** Human-readable explanation for algorithm choice */
+    reason: string;
+
+    /** Metrics that informed the algorithm decision */
+    metrics: {
+      /** Coefficient of variation in pairwise distances */
+      distance_cv: number;
+
+      /** Variance explained by top 2 principal components */
+      pca_variance_2d: number;
+
+      /** Ratio of between-cluster to within-cluster distances (if ground truth available) */
+      separation_ratio?: number;
+    };
+  };
+
+  /** Quality metrics for the clustering result */
+  cluster_quality: {
+    /** Average confidence across all 4 clusters (0-1) */
+    avg_confidence: number;
+
+    /** Confidence score for each of the 4 clusters (0-1) */
+    confidence_per_cluster: number[];
+
+    /** Statistical distance metrics for embeddings */
+    distance_metrics: {
+      /** Mean Euclidean distance between word pairs */
+      euclidean_mean: number;
+
+      /** Standard deviation of Euclidean distances */
+      euclidean_std: number;
+
+      /** Mean cosine distance between word pairs */
+      cosine_mean: number;
+
+      /** Standard deviation of cosine distances */
+      cosine_std: number;
+    };
+  };
+
+  /** Visualization data for 2D scatter plot */
+  visualization: {
+    /** Dimensionality reduction method used */
+    method: 'tsne' | 'pca';
+
+    /** 2D coordinates for all 16 words */
+    coordinates_2d: WordVisualizationPoint[];
+
+    /** Indices of words that are far from their cluster centers */
+    outliers: number[];
+  };
+}
+
+/**
  * Result from running a solver on a puzzle.
  * Contains predictions, timing, and metadata.
  */
@@ -93,6 +174,9 @@ export interface SolverResult {
 
   /** Time taken to solve in milliseconds */
   execution_time_ms: number;
+
+  /** Optional solver-specific metadata (e.g., algorithm selection, quality metrics) */
+  solver_metadata?: ClusterSolverMetadata;
 
   /** Timestamp when solve was performed */
   solved_at: string;

@@ -2,35 +2,78 @@
 
 import numpy as np
 import logging
-from typing import List
+import threading
+from typing import List, Dict, Any, Optional
 from gensim.models import Word2Vec
 
 from .base import EmbeddingProvider
 
 logger = logging.getLogger(__name__)
 
+# Module-level cache for Word2Vec models to avoid loading 1.6GB model per instance
+_GLOBAL_MODEL_CACHE: Dict[str, Any] = {}
+_CACHE_LOCK = threading.Lock()
+
 
 class Word2VecEmbeddingProvider(EmbeddingProvider):
     """Word2Vec embedding provider using pre-trained model
 
-    This provider uses the pre-trained Word2Vec model from gensim. 
-    Word2Vec was trained on a corpus of text to determine co-occurrence patterns of words. 
+    This provider uses the pre-trained Word2Vec model from gensim.
+    Word2Vec was trained on a corpus of text to determine co-occurrence patterns of words.
     Words with similar meanings will occur in similar contexts, and therefore will have similar embeddings.
+
+    The provider uses a module-level cache to avoid loading the 1.6GB model multiple times.
+    First instance loads the model (~10s), subsequent instances reuse the cached model (instant).
+
+    Args:
+        model_name: Name of the pre-trained model from gensim (default: "word2vec-google-news-300")
+        use_cache: Whether to use the global model cache (default: True)
+
+    Examples:
+        >>> # First instance loads model (slow)
+        >>> provider1 = Word2VecEmbeddingProvider()
+        >>> # Second instance reuses cached model (fast)
+        >>> provider2 = Word2VecEmbeddingProvider()
+        >>>
+        >>> # Clear cache to free memory
+        >>> Word2VecEmbeddingProvider.clear_cache()
     """
 
-    def __init__(self, model_name: str = "word2vec-google-news-300"):
+    def __init__(self, model_name: str = "word2vec-google-news-300", use_cache: bool = True):
         self.model_name = model_name
+        self.use_cache = use_cache
         self.model = None
         self._load_model()
 
     def _load_model(self):
-        """Load pre-trained Word2Vec model from gensim"""
+        """Load pre-trained Word2Vec model from gensim
+
+        Uses global cache if use_cache=True to avoid reloading the 1.6GB model.
+        Thread-safe using a lock to prevent race conditions.
+        """
         try:
             import gensim.downloader as api
 
+            # Check cache first if caching is enabled
+            if self.use_cache:
+                with _CACHE_LOCK:
+                    if self.model_name in _GLOBAL_MODEL_CACHE:
+                        logger.info(f"Reusing cached Word2Vec model: {self.model_name}")
+                        self.model = _GLOBAL_MODEL_CACHE[self.model_name]
+                        return
+
+            # Load model if not in cache
             logger.info(f"Loading pre-trained Word2Vec model from gensim: {self.model_name}")
-            self.model = api.load(self.model_name)
+            model = api.load(self.model_name)
             logger.info(f"Pre-trained Word2Vec model loaded successfully: {self.model_name}")
+
+            # Store in cache if caching is enabled
+            if self.use_cache:
+                with _CACHE_LOCK:
+                    _GLOBAL_MODEL_CACHE[self.model_name] = model
+                    logger.info(f"Cached Word2Vec model: {self.model_name}")
+
+            self.model = model
 
         except ImportError:
             logger.error("Gensim is not installed. Please install it using `pip install gensim`")
@@ -75,4 +118,27 @@ class Word2VecEmbeddingProvider(EmbeddingProvider):
         if self.model is None:
             raise ValueError("Model not loaded. Cannot determine embedding dimensions.")
         return self.model.vector_size
+
+    @staticmethod
+    def clear_cache(model_name: Optional[str] = None):
+        """Clear the global model cache to free memory
+
+        Args:
+            model_name: Specific model to remove from cache. If None, clears entire cache.
+
+        Examples:
+            >>> # Clear specific model
+            >>> Word2VecEmbeddingProvider.clear_cache("word2vec-google-news-300")
+            >>>
+            >>> # Clear all cached models
+            >>> Word2VecEmbeddingProvider.clear_cache()
+        """
+        with _CACHE_LOCK:
+            if model_name:
+                if model_name in _GLOBAL_MODEL_CACHE:
+                    del _GLOBAL_MODEL_CACHE[model_name]
+                    logger.info(f"Cleared cached model: {model_name}")
+            else:
+                _GLOBAL_MODEL_CACHE.clear()
+                logger.info("Cleared all cached Word2Vec models")
 
