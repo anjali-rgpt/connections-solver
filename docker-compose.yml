@@ -1,0 +1,36 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    container_name: connections-solver-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+      - STORAGE_TYPE=${STORAGE_TYPE:-memory}
+    volumes:
+      # Mount source code for development (hot reload)
+      - ./backend/src:/app/src
+      - ./backend/data:/app/data
+    command: uvicorn src.connections_solver.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ./Dockerfile
+    container_name: connections-solver-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mount source code for development (hot reload)
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+      - ./frontend/tailwind.config.js:/app/tailwind.config.js
+      - ./frontend/postcss.config.js:/app/postcss.config.js
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://backend:8000
