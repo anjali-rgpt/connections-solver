@@ -1,8 +1,75 @@
 """Utilities for enforcing Connections game constraints."""
 
 import numpy as np
-from typing import List
+from typing import List, Tuple
 from scipy.spatial.distance import cdist
+from scipy.optimize import linear_sum_assignment
+
+
+def enforce_equal_clusters_optimal(
+    embeddings: np.ndarray,
+    labels: np.ndarray,
+    centers: np.ndarray,
+    distance_metric: str = 'cosine'
+) -> np.ndarray:
+    """Optimally reassign words to create exactly 4 words per cluster.
+
+    Uses the Hungarian algorithm (linear_sum_assignment) to find the optimal
+    assignment that minimizes total distance from words to cluster centers
+    while ensuring exactly 4 words per cluster.
+
+    Algorithm:
+        1. Build cost matrix: cost[word_i][cluster_j] = distance(word_i, center_j)
+        2. Each cluster needs exactly 4 words, so duplicate each cluster 4 times
+        3. Use Hungarian algorithm to find minimum-cost perfect matching
+        4. Map assignments back to cluster labels
+
+    Complexity: O(n³) where n=16 words. Fast enough for real-time use (~1ms).
+
+    Args:
+        embeddings: Word embeddings matrix (16, dim)
+        labels: Initial cluster assignments (16,) - not used but kept for API compatibility
+        centers: Cluster centroids (4, dim)
+        distance_metric: 'cosine' or 'euclidean'
+
+    Returns:
+        Optimal cluster labels (16,) with exactly 4 words per cluster
+
+    Example:
+        >>> embeddings = np.random.rand(16, 300)
+        >>> centers = np.random.rand(4, 300)
+        >>> labels = np.zeros(16)  # Initial labels (not used)
+        >>> optimal_labels = enforce_equal_clusters_optimal(embeddings, labels, centers)
+        >>> np.bincount(optimal_labels)
+        array([4, 4, 4, 4])  # Exactly 4 words per cluster
+    """
+    n_clusters = 4
+    words_per_cluster = 4
+
+    # Build cost matrix: distance from each word to each cluster center
+    # Shape: (16 words, 4 clusters)
+    cost_matrix = cdist(embeddings, centers, metric=distance_metric)
+
+    # Duplicate each cluster column 4 times to enforce "exactly 4 words per cluster"
+    # Shape: (16 words, 16 slots) where slots 0-3 are cluster 0, 4-7 are cluster 1, etc.
+    expanded_costs = np.repeat(cost_matrix, words_per_cluster, axis=1)
+
+    # Hungarian algorithm finds optimal one-to-one assignment minimizing total cost
+    # row_indices: which word (0-15)
+    # col_indices: which slot (0-15)
+    row_indices, col_indices = linear_sum_assignment(expanded_costs)
+
+    # Map slot indices back to cluster labels
+    # Slot 0-3 → cluster 0, slot 4-7 → cluster 1, etc.
+    optimal_labels = col_indices // words_per_cluster
+
+    # Verify result (should always be true with Hungarian algorithm)
+    cluster_sizes = np.bincount(optimal_labels, minlength=n_clusters)
+    if not np.all(cluster_sizes == words_per_cluster):
+        # Fallback to greedy if somehow failed (shouldn't happen)
+        return enforce_equal_clusters(embeddings, labels, centers, distance_metric)
+
+    return optimal_labels
 
 
 def enforce_equal_clusters(
@@ -152,3 +219,124 @@ def calculate_confidence(
     # Final safety check and clipping
     result = float(np.clip(confidence, 0.0, 1.0))
     return result if np.isfinite(result) else 0.1
+
+
+def refine_clusters_iterative(
+    embeddings: np.ndarray,
+    labels: np.ndarray,
+    distance_metric: str = 'cosine',
+    max_iterations: int = 3
+) -> np.ndarray:
+    """Iteratively refine cluster assignments by swapping words between clusters.
+
+    After initial clustering, this post-processing step tries swapping pairs of words
+    from different clusters to see if it improves overall cluster cohesion (reduces
+    total within-cluster distance).
+
+    Algorithm:
+        1. Compute initial total within-cluster distance
+        2. For each iteration:
+           a. Try swapping each pair of words from different clusters
+           b. If swap reduces total distance, keep it
+           c. If no swaps improve, stop early
+        3. Return refined labels
+
+    Why this works:
+        - Initial clustering algorithms may make suboptimal assignments at boundaries
+        - Local search can find better configurations
+        - Greedy swapping is simple and fast
+
+    Complexity: O(iterations * n² * d) where n=16 words, d=embedding dim
+        With max_iterations=3: ~3 * 120 comparisons * distance calculations
+        Fast enough for real-time use (~10-20ms)
+
+    Args:
+        embeddings: Word embeddings matrix (16, dim)
+        labels: Initial cluster assignments (16,)
+        distance_metric: 'cosine' or 'euclidean'
+        max_iterations: Maximum refinement iterations (default: 3)
+            - 3 iterations provides good balance of accuracy vs speed
+            - Diminishing returns after 3 iterations in practice
+
+    Returns:
+        Refined cluster labels (16,) with same cluster sizes as input
+
+    Example:
+        >>> labels = np.array([0,0,0,0, 1,1,1,1, 2,2,2,2, 3,3,3,3])
+        >>> refined = refine_clusters_iterative(embeddings, labels)
+        >>> # Words may have been swapped to improve cohesion
+    """
+    labels = labels.copy()  # Don't modify original
+    n_words = len(labels)
+
+    # Compute initial total within-cluster distance (lower is better)
+    best_cost = _compute_total_within_cluster_distance(embeddings, labels, distance_metric)
+
+    for iteration in range(max_iterations):
+        improved = False
+
+        # Try swapping each pair of words from different clusters
+        for i in range(n_words):
+            for j in range(i + 1, n_words):
+                # Only consider words in different clusters
+                if labels[i] == labels[j]:
+                    continue
+
+                # Swap
+                labels[i], labels[j] = labels[j], labels[i]
+
+                # Compute new cost
+                new_cost = _compute_total_within_cluster_distance(embeddings, labels, distance_metric)
+
+                if new_cost < best_cost:
+                    # Keep swap - it improved cohesion
+                    best_cost = new_cost
+                    improved = True
+                else:
+                    # Revert swap - it made things worse
+                    labels[i], labels[j] = labels[j], labels[i]
+
+        # Early stopping: if no swaps improved, we've reached local optimum
+        if not improved:
+            break
+
+    return labels
+
+
+def _compute_total_within_cluster_distance(
+    embeddings: np.ndarray,
+    labels: np.ndarray,
+    distance_metric: str = 'cosine'
+) -> float:
+    """Compute total within-cluster distance (sum of distances to cluster centers).
+
+    Helper function for iterative refinement. Lower values indicate tighter,
+    more cohesive clusters.
+
+    Args:
+        embeddings: Word embeddings matrix (16, dim)
+        labels: Cluster assignments (16,)
+        distance_metric: 'cosine' or 'euclidean'
+
+    Returns:
+        Total distance as a float
+    """
+    total_distance = 0.0
+    n_clusters = len(np.unique(labels))
+
+    for cluster_id in range(n_clusters):
+        # Get words in this cluster
+        mask = labels == cluster_id
+        if not np.any(mask):
+            continue  # Empty cluster
+
+        cluster_embeddings = embeddings[mask]
+
+        # Compute cluster center
+        center = cluster_embeddings.mean(axis=0)
+
+        # Sum distances from words to center
+        distances = cdist(cluster_embeddings, center[np.newaxis, :], metric=distance_metric).ravel()
+        total_distance += distances.sum()
+
+    return total_distance

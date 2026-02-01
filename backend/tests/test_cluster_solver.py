@@ -247,20 +247,18 @@ def test_model_cache_reuse(mock_word2vec_model, puzzle: Puzzle) -> None:
     with patch('gensim.downloader.load') as mock_load:
         mock_load.return_value = mock_word2vec_model
 
-        # First instance - should load model
+        # First solve - should load model (lazy loading on first solve call)
         solver1 = ClusterSolver()
+        categories1 = solver1.solve(puzzle.words)
+        assert len(categories1) == 4
         assert mock_load.call_count == 1
 
-        # Second instance - should reuse cache
+        # Second solve - should reuse cache
         solver2 = ClusterSolver()
+        categories2 = solver2.solve(puzzle.words)
+        assert len(categories2) == 4
         # Still only 1 call (cached)
         assert mock_load.call_count == 1
-
-        # Both should work
-        categories1 = solver1.solve(puzzle.words)
-        categories2 = solver2.solve(puzzle.words)
-        assert len(categories1) == 4
-        assert len(categories2) == 4
 
 
 def test_cache_clear(mock_word2vec_model, puzzle: Puzzle) -> None:
