@@ -53,15 +53,15 @@ class Word2VecEmbeddingProvider(EmbeddingProvider):
         words = [word.strip().lower() for word in words]
 
         embeddings = []
+        embedding_dim = self.get_embedding_dims()
 
         for word in words:
             try:
                 embedding = self.model[word]
             except KeyError:
                 # If word is not found in vocabulary, use zero vector as placeholder
-
                 logger.warning(f"Word '{word}' not found in vocabulary. Using zero vector as placeholder.")
-                embedding = np.zeros(self.get_embedding_dims())
+                embedding = np.zeros(embedding_dim)
             embeddings.append(embedding)
 
         return np.array(embeddings)
