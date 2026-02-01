@@ -1,0 +1,59 @@
+# Production Docker Compose Configuration
+# Optimized for production deployment with proper security and performance settings
+
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile.prod
+    container_name: connections-solver-backend-prod
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - ENVIRONMENT=production
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
+      - STORAGE_TYPE=${STORAGE_TYPE:-sqlite}
+      - DATABASE_PATH=/app/data/connections.db
+    volumes:
+      # Persist database
+      - backend-data:/app/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ./Dockerfile.prod
+    container_name: connections-solver-frontend-prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  backend-data:
+    driver: local

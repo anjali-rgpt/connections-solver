@@ -1,12 +1,14 @@
 /**
- * @fileoverview Custom hook for puzzle operations
+ * @fileoverview Custom hook for puzzle operations with request cancellation
  * @module hooks/api/usePuzzle
  */
 
+import { useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { createPuzzle as createPuzzleApi, getPuzzle } from '@/api/puzzles';
 import { solvePuzzle as solvePuzzleApi } from '@/api/solvers';
 import { evaluateSolve } from '@/api/evaluations';
+import { createAbortController } from '@/api';
 import { usePuzzleStore } from '@/stores/puzzleStore';
 import type { CreatePuzzleRequest, SolverInfo } from '@/types/api';
 
@@ -16,10 +18,15 @@ import type { CreatePuzzleRequest, SolverInfo } from '@/types/api';
  * Provides functions for creating puzzles, solving with different solvers,
  * and resetting application state. Automatically updates global puzzle store.
  *
+ * **Request Cancellation:**
+ * When a new puzzle is created or loaded while solvers are running,
+ * all in-flight solver requests are automatically cancelled to prevent
+ * wasted resources and outdated results.
+ *
  * @returns Object containing puzzle operation functions
  *
  * @example
- * const { createPuzzle, solvePuzzle, solveWithAllSolvers, reset } = usePuzzle();
+ * const { createPuzzle, solvePuzzle, solveWithAllSolvers, reset, cancelAll } = usePuzzle();
  *
  * // Create a puzzle
  * await createPuzzle.mutateAsync({ words, solution });
@@ -29,6 +36,9 @@ import type { CreatePuzzleRequest, SolverInfo } from '@/types/api';
  *
  * // Solve with all solvers in parallel
  * await solveWithAllSolvers(availableSolvers);
+ *
+ * // Cancel all running solvers
+ * cancelAll();
  *
  * // Reset state
  * reset();
@@ -43,6 +53,10 @@ export const usePuzzle = () => {
     setSolverError,
     reset: resetStore,
   } = usePuzzleStore();
+
+  // Store abort controllers for cancellation
+  // Ref persists across renders without causing re-renders
+  const solverAbortControllersRef = useRef<Map<string, AbortController>>(new Map());
 
   /**
    * Mutation for creating a new puzzle.
@@ -62,8 +76,27 @@ export const usePuzzle = () => {
   });
 
   /**
+   * Cancels all running solver requests.
+   *
+   * **Use case:**
+   * When user submits a new puzzle while solvers are running,
+   * we cancel the old requests to avoid:
+   * - Wasted backend resources
+   * - Race conditions with outdated results
+   * - Confusing UI states
+   */
+  const cancelAllSolvers = () => {
+    solverAbortControllersRef.current.forEach((controller, solverType) => {
+      console.log(`Cancelling solver: ${solverType}`);
+      controller.abort();
+    });
+    solverAbortControllersRef.current.clear();
+  };
+
+  /**
    * Solves a specific puzzle with a specific solver.
    * Automatically fetches evaluation after solving.
+   * Supports cancellation via AbortController.
    *
    * @param puzzleId - ID of puzzle to solve
    * @param solverType - Name of solver to use (e.g., "random", "embedding")
@@ -73,31 +106,52 @@ export const usePuzzle = () => {
       // Set loading state
       setSolverLoading(solverType, true);
 
-      // Execute solver
+      // Create abort controller for this solver
+      const abortController = createAbortController();
+      solverAbortControllersRef.current.set(solverType, abortController);
+
+      // Execute solver with cancellation support
       const solveResponse = await solvePuzzleApi(
         puzzleId,
-        solverType
+        solverType,
+        undefined,
+        { signal: abortController.signal }
       );
       const solverResult = solveResponse.data;
 
       // Update result
       setSolverResult(solverType, solverResult);
 
-      // Fetch evaluation
-      const evalResponse = await evaluateSolve(solverResult.solve_id);
+      // Fetch evaluation (also cancellable)
+      const evalResponse = await evaluateSolve(solverResult.solve_id, {
+        signal: abortController.signal,
+      });
       const evaluation = evalResponse.data;
 
       // Update evaluation
       setSolverEvaluation(solverType, evaluation);
+
+      // Remove controller after successful completion
+      solverAbortControllersRef.current.delete(solverType);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      setSolverError(solverType, message);
+      // Handle cancellation gracefully
+      if (error instanceof Error && error.name === 'CanceledError') {
+        console.log(`Solver ${solverType} was cancelled`);
+        setSolverError(solverType, 'Cancelled');
+      } else {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        setSolverError(solverType, message);
+      }
+
+      // Clean up controller
+      solverAbortControllersRef.current.delete(solverType);
     }
   };
 
   /**
    * Solves a specific puzzle with all available solvers in parallel.
    * Uses Promise.allSettled to ensure all solvers complete even if some fail.
+   * Cancels any previously running solvers before starting new ones.
    *
    * @param puzzleId - ID of puzzle to solve
    * @param solvers - Array of available solver information
@@ -109,6 +163,9 @@ export const usePuzzle = () => {
    * }
    */
   const solveWithAllSolvers = async (puzzleId: string, solvers: SolverInfo[]) => {
+    // Cancel any running solvers before starting new ones
+    cancelAllSolvers();
+
     const promises = solvers.map((solver) => solvePuzzle(puzzleId, solver.solver_type));
     await Promise.allSettled(promises);
   };
@@ -152,8 +209,10 @@ export const usePuzzle = () => {
   /**
    * Resets all puzzle state.
    * Clears current puzzle and all solver results.
+   * Cancels any running solvers.
    */
   const reset = () => {
+    cancelAllSolvers();
     resetStore();
   };
 
@@ -163,6 +222,7 @@ export const usePuzzle = () => {
     loadAndSolvePuzzle,
     solvePuzzle,
     solveWithAllSolvers,
+    cancelAllSolvers,
     reset,
     currentPuzzle,
   };

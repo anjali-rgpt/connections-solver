@@ -1,11 +1,13 @@
 """Main FastAPI application entry point."""
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi.errors import RateLimitExceeded
 
 from .config import settings
 from .logging_config import setup_logging, get_logger
 from .api.routes import puzzles, solver, evaluation
+from .middleware.rate_limit import limiter, rate_limit_exceeded_handler
 
 # Initialize logging
 setup_logging()
@@ -20,6 +22,12 @@ app = FastAPI(
     description="Backend service for solving NYT Connections puzzles using AI",
     version="0.1.0",
 )
+
+# Add rate limiter state to app
+app.state.limiter = limiter
+
+# Register rate limit exceeded handler
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 logger.info("Starting Connections Solver API")
 logger.info(f"Environment: {settings.environment}")

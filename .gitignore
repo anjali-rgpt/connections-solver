@@ -85,3 +85,6 @@ dmypy.json
 
 # Ruff
 .ruff_cache/
+
+# Architecture documentation (local only)
+ARCHITECTURE_IMPROVEMENTS.md

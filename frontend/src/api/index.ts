@@ -3,7 +3,8 @@
  * @module api
  */
 
-export { apiClient } from './client';
+export { apiClient, createAbortController } from './client';
 export * from './puzzles';
 export * from './solvers';
 export * from './evaluations';
+export * from './errors';
