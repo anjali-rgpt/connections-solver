@@ -12,6 +12,8 @@ from .models import (
 from .exceptions import (
     SolverNotFoundError,
     PuzzleNotFoundError,
+    ExternalPuzzleSourceError,
+    PuzzleFormatError,
 )
 
 __all__ = [
@@ -25,4 +27,6 @@ __all__ = [
     "Evaluation",
     "SolverNotFoundError",
     "PuzzleNotFoundError",
+    "ExternalPuzzleSourceError",
+    "PuzzleFormatError",
 ]

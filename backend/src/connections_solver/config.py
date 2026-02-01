@@ -13,6 +13,8 @@ class Settings(BaseSettings):
         cors_origins: Comma-separated list of allowed CORS origins
         storage_type: Type of storage to use ("memory" or "sqlite")
         database_path: Path to SQLite database file (only used if storage_type is "sqlite")
+        wandb_dataset_url: URL to wandb connections dataset
+        external_puzzle_timeout: Timeout in seconds for external puzzle fetching
     """
 
     environment: str = "development"
@@ -20,6 +22,8 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000,http://localhost:8000"
     storage_type: str = "memory"
     database_path: str = "data/connections.db"
+    wandb_dataset_url: str = "https://raw.githubusercontent.com/wandb/connections/main/connections_prompts.jsonl"
+    external_puzzle_timeout: int = 10
 
     class Config:
         """Pydantic configuration."""

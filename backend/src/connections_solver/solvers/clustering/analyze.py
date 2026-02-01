@@ -96,7 +96,7 @@ def analyze(
         separation_ratio = np.mean(between_dists) / np.mean(within_dists)
 
         if verbose:
-            print(f"\n=== Category Separation ===")
+            print("\n=== Category Separation ===")
             print(f"Within-category distance:  {np.mean(within_dists):.3f} ± {np.std(within_dists):.3f}")
             print(f"Between-category distance: {np.mean(between_dists):.3f} ± {np.std(between_dists):.3f}")
             print(f"Separation ratio: {separation_ratio:.2f}")
@@ -104,7 +104,7 @@ def analyze(
 
     # 3. Dimensionality analysis
     if verbose:
-        print(f"\n=== Dimensionality ===")
+        print("\n=== Dimensionality ===")
         print(f"Original dims: {embeddings.shape[1]}")
 
     pca = PCA()
@@ -119,7 +119,7 @@ def analyze(
 
     # 4. Cluster characteristic analysis
     if verbose:
-        print(f"\n=== Cluster Characteristics ===")
+        print("\n=== Cluster Characteristics ===")
 
     # Measure density variation using std of pairwise distances
     dist_std = cosine_dists.std()
@@ -141,7 +141,7 @@ def analyze(
 
     # 5. Algorithm recommendation
     if verbose:
-        print(f"\n=== Recommendation ===")
+        print("\n=== Recommendation ===")
 
     # Decision logic:
     # - K-Means: Good for spherical, well-separated, uniform density

@@ -14,7 +14,6 @@ from .embeddings import Word2VecEmbeddingProvider
 from .clustering import cluster as apply_clustering
 from .clustering.analyze import analyze
 from .clustering.utils import (
-    enforce_equal_clusters,
     enforce_equal_clusters_optimal,
     refine_clusters_iterative,
     calculate_confidence
@@ -147,7 +146,7 @@ class ClusterSolver(BaseSolver):
             algorithm = self.algorithm_override
             # Still run analyze to get metrics, but ignore recommendation
             _, analysis_metrics = analyze(embeddings, words, true_categories=None, verbose=False)
-            reason = f"Algorithm manually specified in config"
+            reason = "Algorithm manually specified in config"
         else:
             # Run analysis to get recommendation and metrics
             algorithm, analysis_metrics = analyze(embeddings, words, true_categories=None, verbose=False)

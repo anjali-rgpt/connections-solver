@@ -4,10 +4,15 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from ...core.models import Puzzle
-from ...core.exceptions import PuzzleNotFoundError
+from ...core.exceptions import (
+    PuzzleNotFoundError,
+    ExternalPuzzleSourceError,
+    PuzzleFormatError,
+)
 from ...logging_config import get_logger
 from ...storage.base import BaseStorage
-from ..dependencies import get_storage
+from ...external.base import BaseExternalPuzzleSource
+from ..dependencies import get_storage, get_external_puzzle_source
 from ..models.requests import CreatePuzzleRequest
 from ..models.responses import PuzzleListResponse
 
@@ -42,6 +47,47 @@ def create_puzzle(
     stored_puzzle = storage.store_puzzle(puzzle)
     logger.info(f"Puzzle created: puzzle_id={stored_puzzle.puzzle_id}")
     return stored_puzzle
+
+
+@router.get("/random", response_model=Puzzle)
+def get_random_puzzle(
+    puzzle_source: BaseExternalPuzzleSource = Depends(get_external_puzzle_source),
+) -> Puzzle:
+    """Fetch a random puzzle from external dataset (wandb connections).
+
+    This endpoint fetches a random puzzle from the wandb/connections dataset
+    without storing it in the database. The puzzle is returned directly with
+    proper difficulty levels assigned to each category.
+
+    Args:
+        puzzle_source: External puzzle source dependency
+
+    Returns:
+        Random puzzle with 16 words and 4 categories with difficulty levels
+
+    Raises:
+        HTTPException: 503 if external source is unavailable, 502 if data format is invalid
+    """
+    logger.info("Random puzzle request received")
+
+    try:
+        puzzle = puzzle_source.fetch_random_puzzle()
+        logger.info(f"Random puzzle fetched successfully: puzzle_id={puzzle.puzzle_id}")
+        return puzzle
+
+    except ExternalPuzzleSourceError as exc:
+        logger.error(f"External puzzle source error: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"External puzzle source unavailable: {str(exc)}",
+        ) from exc
+
+    except PuzzleFormatError as exc:
+        logger.error(f"Puzzle format error: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Invalid puzzle data format: {str(exc)}",
+        ) from exc
 
 
 @router.get("/{puzzle_id}", response_model=Puzzle)

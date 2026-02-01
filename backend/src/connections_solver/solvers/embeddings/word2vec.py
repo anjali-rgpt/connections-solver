@@ -4,7 +4,6 @@ import numpy as np
 import logging
 import threading
 from typing import List, Dict, Any, Optional
-from gensim.models import Word2Vec
 
 from .base import EmbeddingProvider
 

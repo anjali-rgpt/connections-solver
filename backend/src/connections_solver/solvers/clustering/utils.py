@@ -1,7 +1,7 @@
 """Utilities for enforcing Connections game constraints."""
 
 import numpy as np
-from typing import List, Tuple
+from typing import List
 from scipy.spatial.distance import cdist
 from scipy.optimize import linear_sum_assignment
 

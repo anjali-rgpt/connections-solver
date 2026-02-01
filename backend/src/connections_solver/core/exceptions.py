@@ -23,3 +23,11 @@ class SolverNotFoundError(Exception):
 
 class InvalidSolverConfigError(Exception):
     """Raised when solver configuration is invalid."""
+
+
+class ExternalPuzzleSourceError(Exception):
+    """Raised when external puzzle source fails (network, timeout, etc.)."""
+
+
+class PuzzleFormatError(Exception):
+    """Raised when external puzzle data has invalid format."""
