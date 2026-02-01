@@ -103,6 +103,11 @@ export const PuzzleForm: React.FC = () => {
 
   return (
     <form onSubmit={handleSubmit}>
+      <div className="mb-4 text-xs text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
+        <p className="font-semibold text-blue-800 mb-1">💡 Tip: Multi-word phrases</p>
+        <p>You can use multi-word phrases like "NEW YORK" or "HOT DOG". The solver will automatically handle them.</p>
+      </div>
+
       {categories.map((category, index) => (
         <CategoryInput
           key={index}

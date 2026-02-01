@@ -34,8 +34,16 @@ export const ClusterVisualization: React.FC<ClusterVisualizationProps> = ({
 
   // Calculate viewport bounds with padding
   const bounds = useMemo(() => {
-    const xs = coordinates_2d.map((p) => p.x);
-    const ys = coordinates_2d.map((p) => p.y);
+    // Filter out null/invalid coordinates
+    const validCoords = coordinates_2d.filter(p => p.x != null && p.y != null && isFinite(p.x) && isFinite(p.y));
+    
+    if (validCoords.length === 0) {
+      // Return default bounds if no valid coordinates
+      return { minX: -1, maxX: 1, minY: -1, maxY: 1, width: 2, height: 2 };
+    }
+    
+    const xs = validCoords.map((p) => p.x);
+    const ys = validCoords.map((p) => p.y);
 
     const minX = Math.min(...xs);
     const maxX = Math.max(...xs);
@@ -43,8 +51,8 @@ export const ClusterVisualization: React.FC<ClusterVisualizationProps> = ({
     const maxY = Math.max(...ys);
 
     // Add 10% padding
-    const paddingX = (maxX - minX) * 0.1;
-    const paddingY = (maxY - minY) * 0.1;
+    const paddingX = (maxX - minX) * 0.1 || 1;
+    const paddingY = (maxY - minY) * 0.1 || 1;
 
     return {
       minX: minX - paddingX,
@@ -150,7 +158,9 @@ export const ClusterVisualization: React.FC<ClusterVisualizationProps> = ({
               </g>
 
               {/* Data points */}
-              {coordinates_2d.map((point, idx) => {
+              {coordinates_2d
+                .filter(point => point.x != null && point.y != null && isFinite(point.x) && isFinite(point.y))
+                .map((point, idx) => {
                 const { x, y } = normalizePoint(point.x, point.y);
                 const color = clusterColors[point.cluster];
                 const isOutlier = outliers.includes(idx);

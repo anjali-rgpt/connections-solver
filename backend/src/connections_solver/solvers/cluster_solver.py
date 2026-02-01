@@ -4,6 +4,7 @@ import time
 import numpy as np
 from typing import List, Optional, Dict, Any
 from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 from scipy.spatial.distance import cdist
 
 from .base import BaseSolver
@@ -71,10 +72,20 @@ class ClusterSolver(BaseSolver):
                    to override auto-detection ('kmeans', 'agglomerative', 'dbscan')
         """
         super().__init__(config)
-        self.embedder = Word2VecEmbeddingProvider()
+        self.embedder = None  # Lazy-loaded on first solve() call
         self.n_clusters = 4  # Always 4 categories in Connections
         self.distance_metric = 'cosine'  # Cosine works better than Euclidean for word embeddings
         self.algorithm_override = self.config.get('algorithm')
+    
+    def _get_embedder(self) -> Word2VecEmbeddingProvider:
+        """Get or create the embedder (lazy loading).
+        
+        The Word2Vec model (1.6GB) is only loaded when first needed,
+        not during __init__. This prevents timeouts when listing solvers.
+        """
+        if self.embedder is None:
+            self.embedder = Word2VecEmbeddingProvider()
+        return self.embedder
 
     def solve(self, words: List[str]) -> List[PredictedCategory]:
         """Solve puzzle by clustering words.
@@ -85,10 +96,26 @@ class ClusterSolver(BaseSolver):
         Returns:
             List of 4 PredictedCategory objects with 4 words each
         """
-        # 1. Generate embeddings
-        embeddings = self.embedder.embed(words)
+        # 1. Generate embeddings (lazy-load embedder on first use)
+        embedder = self._get_embedder()
+        raw_embeddings = embedder.embed(words)
+        
+        # 2. Dimensionality reduction with PCA
+        # For 16 words, we don't need 300 dimensions - reduce to improve performance
+        # Keep enough dims to preserve ~95% variance, cap at 50 dimensions
+        original_dims = raw_embeddings.shape[1]
+        
+        if original_dims > 16:  # Only reduce if dims > n_samples
+            pca = PCA(n_components=min(50, len(words) - 1))  # Keep up to 50 dims or n-1
+            embeddings = pca.fit_transform(raw_embeddings)
+            reduced_dims = embeddings.shape[1]
+            variance_kept = pca.explained_variance_ratio_.sum()
+        else:
+            embeddings = raw_embeddings
+            reduced_dims = original_dims
+            variance_kept = 1.0
 
-        # 2. Determine which algorithm to use
+        # 3. Determine which algorithm to use
         if self.algorithm_override:
             algorithm = self.algorithm_override
             # Still run analyze to get metrics, but ignore recommendation
@@ -145,11 +172,17 @@ class ClusterSolver(BaseSolver):
             algorithm=algorithm,
             reason=reason,
             analysis_metrics=analysis_metrics,
-            embeddings=embeddings,
+            embeddings=raw_embeddings,  # Use raw embeddings for visualization
+            reduced_embeddings=embeddings,  # Use reduced for cluster quality
             words=words,
             labels=adjusted_labels,
             centers=centers,
-            confidence_scores=confidence_scores
+            confidence_scores=confidence_scores,
+            pca_info={
+                'original_dims': original_dims,
+                'reduced_dims': reduced_dims,
+                'variance_kept': variance_kept
+            }
         )
 
         return categories
@@ -184,16 +217,44 @@ class ClusterSolver(BaseSolver):
 
         return result
 
+    def _sanitize_for_json(self, obj: Any) -> Any:
+        """Recursively sanitize data structure to be JSON-compliant.
+        
+        Converts nan, inf, -inf to None or safe defaults.
+        
+        Args:
+            obj: Any Python object (dict, list, float, etc.)
+            
+        Returns:
+            JSON-compliant version of the object
+        """
+        if isinstance(obj, dict):
+            return {key: self._sanitize_for_json(value) for key, value in obj.items()}
+        elif isinstance(obj, (list, tuple)):
+            return [self._sanitize_for_json(item) for item in obj]
+        elif isinstance(obj, (np.floating, float)):
+            if np.isnan(obj) or np.isinf(obj):
+                return None  # or could use 0.0 or a string like "NaN"
+            return float(obj)
+        elif isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.ndarray):
+            return self._sanitize_for_json(obj.tolist())
+        else:
+            return obj
+
     def _generate_metadata(
         self,
         algorithm: str,
         reason: str,
         analysis_metrics: Dict[str, Any],
         embeddings: np.ndarray,
+        reduced_embeddings: np.ndarray,
         words: List[str],
         labels: np.ndarray,
         centers: np.ndarray,
-        confidence_scores: List[float]
+        confidence_scores: List[float],
+        pca_info: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Generate comprehensive metadata for explainability.
 
@@ -201,11 +262,13 @@ class ClusterSolver(BaseSolver):
             algorithm: Chosen clustering algorithm
             reason: Human-readable explanation for algorithm choice
             analysis_metrics: Metrics from analyze() function
-            embeddings: Word embeddings array
+            embeddings: Raw word embeddings array (for visualization)
+            reduced_embeddings: PCA-reduced embeddings (for cluster quality)
             words: List of words
             labels: Cluster assignments
             centers: Cluster centers
             confidence_scores: Confidence per cluster
+            pca_info: PCA dimensionality reduction info
 
         Returns:
             Metadata dictionary with algorithm_selection, cluster_quality, and visualization
@@ -218,11 +281,11 @@ class ClusterSolver(BaseSolver):
             "cosine_std": analysis_metrics["cosine_std"],
         }
 
-        # Generate 2D visualization coordinates
+        # Generate 2D visualization coordinates (use raw embeddings for better vis)
         visualization_data = self._generate_visualization(embeddings, words, labels)
 
-        # Detect outliers (words far from cluster centers)
-        outliers = self._detect_outliers(embeddings, labels, centers)
+        # Detect outliers (use reduced embeddings that were used for clustering)
+        outliers = self._detect_outliers(reduced_embeddings, labels, centers)
 
         # Build metadata structure
         metadata = {
@@ -239,6 +302,11 @@ class ClusterSolver(BaseSolver):
                 "confidence_per_cluster": [float(c) for c in confidence_scores],
                 "distance_metrics": distance_metrics
             },
+            "dimensionality_reduction": {
+                "original_dims": pca_info['original_dims'],
+                "reduced_dims": pca_info['reduced_dims'],
+                "variance_kept": float(pca_info['variance_kept'])
+            },
             "visualization": {
                 "method": "tsne",
                 "coordinates_2d": visualization_data,
@@ -250,7 +318,8 @@ class ClusterSolver(BaseSolver):
         if "separation_ratio" in analysis_metrics:
             metadata["algorithm_selection"]["metrics"]["separation_ratio"] = analysis_metrics["separation_ratio"]
 
-        return metadata
+        # Sanitize all values to ensure JSON compliance
+        return self._sanitize_for_json(metadata)
 
     def _generate_visualization(
         self,

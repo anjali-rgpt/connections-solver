@@ -261,7 +261,10 @@ export interface Evaluation {
  * Used to populate solver selection UI.
  */
 export interface SolverInfo {
-  /** Solver identifier (e.g., "random", "embedding") */
+  /** Solver registry key for API requests (e.g., "random", "cluster") */
+  solver_type: string;
+
+  /** Human-readable display name (e.g., "Random Solver", "Cluster Solver") */
   name: string;
 
   /** Human-readable description of how the solver works */

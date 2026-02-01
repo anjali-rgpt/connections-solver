@@ -86,25 +86,40 @@ class Word2VecEmbeddingProvider(EmbeddingProvider):
     def embed(self, words: List[str]) -> np.ndarray:
         """Convert a list of words into a matrix of embeddings
 
+        Multi-word phrases are handled by replacing spaces with underscores,
+        which is the format used by the Google News Word2Vec model.
+
         Args:
-            words: List[str] - List of words to embed
+            words: List[str] - List of words or phrases to embed
 
         Returns:
             np.ndarray - Matrix of embeddings of shape(len(words), embedding_dim)
+
+        Examples:
+            >>> provider.embed(["NEW YORK", "hot dog", "bass"])
+            # Looks up: "new_york", "hot_dog", "bass"
         """
         
-        words = [word.strip().lower() for word in words]
+        # Normalize: strip whitespace, lowercase, replace spaces with underscores
+        normalized_words = [word.strip().lower().replace(' ', '_') for word in words]
 
         embeddings = []
         embedding_dim = self.get_embedding_dims()
 
-        for word in words:
+        for original_word, normalized_word in zip(words, normalized_words):
             try:
-                embedding = self.model[word]
+                embedding = self.model[normalized_word]
             except KeyError:
-                # If word is not found in vocabulary, use zero vector as placeholder
-                logger.warning(f"Word '{word}' not found in vocabulary. Using zero vector as placeholder.")
-                embedding = np.zeros(embedding_dim)
+                # If normalized form not found, try original lowercase without underscore
+                try:
+                    embedding = self.model[normalized_word.replace('_', '')]
+                except KeyError:
+                    # If still not found, use zero vector as placeholder
+                    logger.warning(
+                        f"Word '{original_word}' (normalized: '{normalized_word}') "
+                        f"not found in vocabulary. Using zero vector as placeholder."
+                    )
+                    embedding = np.zeros(embedding_dim)
             embeddings.append(embedding)
 
         return np.array(embeddings)

@@ -86,15 +86,19 @@ export const ClusterAnalysis: React.FC<ClusterAnalysisProps> = ({ metadata }) =>
             <div className="grid grid-cols-2 gap-3">
               <MetricCard
                 label="Distance CV"
-                value={algorithm_selection.metrics.distance_cv.toFixed(3)}
+                value={algorithm_selection.metrics.distance_cv != null 
+                  ? algorithm_selection.metrics.distance_cv.toFixed(3) 
+                  : 'N/A'}
                 tooltip="Coefficient of variation in word distances"
               />
               <MetricCard
                 label="PCA Variance"
-                value={formatPercentage(algorithm_selection.metrics.pca_variance_2d)}
+                value={algorithm_selection.metrics.pca_variance_2d != null
+                  ? formatPercentage(algorithm_selection.metrics.pca_variance_2d)
+                  : 'N/A'}
                 tooltip="Variance explained by top 2 components"
               />
-              {algorithm_selection.metrics.separation_ratio !== undefined && (
+              {algorithm_selection.metrics.separation_ratio != null && (
                 <>
                   <MetricCard
                     label="Separation Ratio"
@@ -117,13 +121,15 @@ export const ClusterAnalysis: React.FC<ClusterAnalysisProps> = ({ metadata }) =>
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-gray-600">Average Confidence</span>
                 <span className="font-semibold text-gray-800">
-                  {formatPercentage(cluster_quality.avg_confidence)}
+                  {cluster_quality.avg_confidence != null 
+                    ? formatPercentage(cluster_quality.avg_confidence)
+                    : 'N/A'}
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
                   className="bg-blue-600 h-2 rounded-full transition-all"
-                  style={{ width: `${cluster_quality.avg_confidence * 100}%` }}
+                  style={{ width: `${(cluster_quality.avg_confidence ?? 0) * 100}%` }}
                 />
               </div>
             </div>
@@ -139,7 +145,7 @@ export const ClusterAnalysis: React.FC<ClusterAnalysisProps> = ({ metadata }) =>
                     Cluster {idx + 1}
                   </div>
                   <div className="text-sm font-semibold text-gray-800">
-                    {formatPercentage(conf)}
+                    {conf != null ? formatPercentage(conf) : 'N/A'}
                   </div>
                 </div>
               ))}

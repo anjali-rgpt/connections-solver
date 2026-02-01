@@ -110,10 +110,29 @@ def calculate_confidence(
         Confidence in [0, 1], where 1 = perfect clustering
 
     Uses average similarity to cluster center. Higher similarity = tighter cluster = higher confidence.
+    
+    Edge cases:
+        - Zero vectors (words not in vocabulary): Returns low confidence (0.1)
+        - NaN/inf values: Returns low confidence (0.1)
     """
-    # Optimize: avoid reshape by broadcasting
+    # Check for zero vectors (words not found in vocabulary)
+    # If center is all zeros or has very low magnitude, assign low confidence
+    center_magnitude = np.linalg.norm(center)
+    if center_magnitude < 1e-6:
+        return 0.1  # Low confidence for zero-vector clusters
+    
+    # Calculate distances
     distances = cdist(cluster_embeddings, center[np.newaxis, :], metric=distance_metric).ravel()
+    
+    # Check for invalid distances (nan/inf)
+    if np.any(~np.isfinite(distances)):
+        return 0.1  # Low confidence for invalid embeddings
+    
     avg_distance = distances.mean()
+    
+    # Check if mean is valid
+    if not np.isfinite(avg_distance):
+        return 0.1
 
     # Convert distance to similarity score in [0, 1]
     # For cosine: distance is already in [0, 2], map to confidence
@@ -130,4 +149,6 @@ def calculate_confidence(
         # exp(-∞) = 0.0 (infinite distance = no confidence)
         confidence = np.exp(-avg_distance)
 
-    return float(np.clip(confidence, 0.0, 1.0))
+    # Final safety check and clipping
+    result = float(np.clip(confidence, 0.0, 1.0))
+    return result if np.isfinite(result) else 0.1

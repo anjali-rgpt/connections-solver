@@ -80,17 +80,18 @@ def list_solvers() -> SolverListResponse:
     """List all available solvers.
 
     Returns:
-        List of solver information including names, descriptions, and config schemas
+        List of solver information including registry keys, names, descriptions, and config schemas
     """
     solvers = SolverRegistry.list_solvers()
 
     solver_infos = []
-    for name, solver_class in solvers.items():
+    for solver_type, solver_class in solvers.items():
         # Create a temporary instance to get metadata
         instance = solver_class()
         solver_infos.append(
             SolverInfoResponse(
-                name=instance.get_name(),
+                solver_type=solver_type,  # Registry key (e.g., "cluster")
+                name=instance.get_name(),  # Display name (e.g., "Cluster Solver")
                 description=instance.get_description(),
                 config_schema=instance.get_config_schema(),
             )

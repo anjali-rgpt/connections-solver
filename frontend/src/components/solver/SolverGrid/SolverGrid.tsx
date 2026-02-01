@@ -33,7 +33,7 @@ import type { SolverGridProps } from './types';
  */
 export const SolverGrid: React.FC<SolverGridProps> = ({ solver }) => {
   const { currentPuzzle, solverStates } = usePuzzleStore();
-  const solverState = solverStates[solver.name];
+  const solverState = solverStates[solver.solver_type];
 
   // Format solver name for display
   const formattedName = formatSolverName(solver.name);
@@ -113,7 +113,7 @@ export const SolverGrid: React.FC<SolverGridProps> = ({ solver }) => {
           </div>
 
           {/* Cluster solver explainability */}
-          {solver.name === 'cluster' && solverState.result.solver_metadata && (
+          {solver.solver_type === 'cluster' && solverState.result.solver_metadata && (
             <div className="mt-6">
               <ClusterAnalysis metadata={solverState.result.solver_metadata} />
               <ClusterVisualization metadata={solverState.result.solver_metadata} />

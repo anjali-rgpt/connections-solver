@@ -30,11 +30,13 @@ class SolverInfoResponse(BaseModel):
     """Response model for solver information.
 
     Attributes:
-        name: Solver name
+        solver_type: Solver registry key (e.g., "cluster", "random")
+        name: Human-readable solver name (e.g., "Cluster Solver")
         description: Human-readable description
         config_schema: JSON schema for configuration
     """
 
+    solver_type: str
     name: str
     description: str
     config_schema: Dict[str, Any]

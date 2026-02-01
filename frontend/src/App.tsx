@@ -60,7 +60,7 @@ const AppContent: React.FC = () => {
         {solversData?.solvers && (
           <div className="space-y-6">
             {solversData.solvers.map((solver) => (
-              <SolverGrid key={solver.name} solver={solver} />
+              <SolverGrid key={solver.solver_type} solver={solver} />
             ))}
           </div>
         )}
