@@ -215,7 +215,7 @@ def test_with_example_puzzle(cluster_solver_with_mock: ClusterSolver, puzzle: Pu
 
     # Check basic result structure
     assert result.puzzle_id == puzzle.puzzle_id
-    assert result.solver_type == "Cluster Solver"
+    assert result.solver_type == "cluster"  # Registry key, not display name
     assert len(result.predicted_categories) == 4
     assert result.execution_time_ms > 0
     assert result.solver_metadata is not None

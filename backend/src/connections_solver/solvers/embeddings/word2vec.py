@@ -48,31 +48,44 @@ class Word2VecEmbeddingProvider(EmbeddingProvider):
         """Load pre-trained Word2Vec model from gensim
 
         Uses global cache if use_cache=True to avoid reloading the 1.6GB model.
-        Thread-safe using a lock to prevent race conditions.
+        Thread-safe using double-checked locking pattern to avoid holding lock
+        during the expensive load operation.
         """
         try:
             import gensim.downloader as api
 
-            # Check cache first if caching is enabled
+            # Double-checked locking pattern for cache
             if self.use_cache:
+                # First check: acquire lock and check cache
                 with _CACHE_LOCK:
                     if self.model_name in _GLOBAL_MODEL_CACHE:
                         logger.info(f"Reusing cached Word2Vec model: {self.model_name}")
                         self.model = _GLOBAL_MODEL_CACHE[self.model_name]
                         return
 
-            # Load model if not in cache
-            logger.info(f"Loading pre-trained Word2Vec model from gensim: {self.model_name}")
-            model = api.load(self.model_name)
-            logger.info(f"Pre-trained Word2Vec model loaded successfully: {self.model_name}")
+                # Cache miss - load model WITHOUT holding lock (expensive operation)
+                logger.info(f"Loading pre-trained Word2Vec model from gensim: {self.model_name}")
+                model = api.load(self.model_name)
+                logger.info(f"Pre-trained Word2Vec model loaded successfully: {self.model_name}")
 
-            # Store in cache if caching is enabled
-            if self.use_cache:
+                # Second check: acquire lock again and verify cache before storing
                 with _CACHE_LOCK:
-                    _GLOBAL_MODEL_CACHE[self.model_name] = model
-                    logger.info(f"Cached Word2Vec model: {self.model_name}")
-
-            self.model = model
+                    if self.model_name in _GLOBAL_MODEL_CACHE:
+                        # Another thread loaded it while we were loading
+                        # Discard our copy and use the cached one
+                        logger.info(f"Another thread cached the model, using cached version: {self.model_name}")
+                        self.model = _GLOBAL_MODEL_CACHE[self.model_name]
+                    else:
+                        # We're first - store our loaded model in cache
+                        _GLOBAL_MODEL_CACHE[self.model_name] = model
+                        self.model = model
+                        logger.info(f"Cached Word2Vec model: {self.model_name}")
+            else:
+                # Caching disabled - just load the model
+                logger.info(f"Loading pre-trained Word2Vec model from gensim: {self.model_name}")
+                model = api.load(self.model_name)
+                logger.info(f"Pre-trained Word2Vec model loaded successfully: {self.model_name}")
+                self.model = model
 
         except ImportError:
             logger.error("Gensim is not installed. Please install it using `pip install gensim`")

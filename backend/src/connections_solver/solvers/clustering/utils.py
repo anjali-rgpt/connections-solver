@@ -67,7 +67,15 @@ def enforce_equal_clusters_optimal(
     cluster_sizes = np.bincount(optimal_labels, minlength=n_clusters)
     if not np.all(cluster_sizes == words_per_cluster):
         # Fallback to greedy if somehow failed (shouldn't happen)
-        return enforce_equal_clusters(embeddings, labels, centers, distance_metric)
+        # Generate placeholder words since enforce_equal_clusters expects it
+        placeholder_words = [f"word_{i}" for i in range(len(embeddings))]
+        return enforce_equal_clusters(
+            words=placeholder_words,
+            embeddings=embeddings,
+            labels=labels,
+            centers=centers,
+            distance_metric=distance_metric
+        )
 
     return optimal_labels
 

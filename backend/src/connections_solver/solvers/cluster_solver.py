@@ -249,7 +249,7 @@ class ClusterSolver(BaseSolver):
 
         result = SolverResult(
             puzzle_id=puzzle.puzzle_id,
-            solver_type=self.get_name(),
+            solver_type="cluster",  # Registry key, not display name
             predicted_categories=predicted_categories,
             execution_time_ms=execution_time_ms,
             solver_config=self.config,

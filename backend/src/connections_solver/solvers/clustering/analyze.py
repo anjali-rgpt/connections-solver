@@ -93,13 +93,26 @@ def analyze(
         within_dists, between_dists = calculate_separation(
             embeddings, words, true_categories
         )
-        separation_ratio = np.mean(between_dists) / np.mean(within_dists)
+
+        # Safe calculation of separation ratio with division-by-zero protection
+        mean_within = np.mean(within_dists) if len(within_dists) > 0 else 0.0
+        mean_between = np.mean(between_dists) if len(between_dists) > 0 else 0.0
+
+        # If within-cluster distance is zero or very small, clusters are perfectly tight
+        # Set ratio to inf to indicate perfect separation
+        if mean_within < 1e-10 or np.isnan(mean_within):
+            separation_ratio = np.inf
+        else:
+            separation_ratio = mean_between / mean_within
 
         if verbose:
             print("\n=== Category Separation ===")
-            print(f"Within-category distance:  {np.mean(within_dists):.3f} ± {np.std(within_dists):.3f}")
-            print(f"Between-category distance: {np.mean(between_dists):.3f} ± {np.std(between_dists):.3f}")
-            print(f"Separation ratio: {separation_ratio:.2f}")
+            print(f"Within-category distance:  {mean_within:.3f} ± {np.std(within_dists):.3f}")
+            print(f"Between-category distance: {mean_between:.3f} ± {np.std(between_dists):.3f}")
+            if np.isinf(separation_ratio):
+                print("Separation ratio: ∞ (perfect cluster separation)")
+            else:
+                print(f"Separation ratio: {separation_ratio:.2f}")
             print(f"Interpretation: {'Good separation' if separation_ratio > 1.2 else 'Overlapping clusters'}")
 
     # 3. Dimensionality analysis
