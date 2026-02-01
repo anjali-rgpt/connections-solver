@@ -8,7 +8,12 @@ Connections is a word puzzle game where you must group 16 words into 4 categorie
 
 - **Modern Web Interface** - React + TypeScript frontend for creating and solving puzzles
 - **FastAPI Backend** - RESTful API for puzzle management and solver execution
-- **Multiple Solvers** - Compare different AI approaches (random baseline, embedding-based, LLM-based)
+- **Multiple Solvers** - Compare different AI approaches:
+  - **Random Solver** - Random baseline for comparison
+  - **Cluster Solver** - Semantic grouping using Word2Vec embeddings and adaptive clustering
+    - Automatically selects best algorithm (K-Means, Agglomerative, or DBSCAN) based on data analysis
+    - Provides explainability: algorithm selection reasoning, cluster quality metrics, 2D visualization
+    - Confidence scores for each predicted category
 - **Real-time Evaluation** - Automatic performance metrics (accuracy, precision, recall, F1 scores)
 - **Parallel Execution** - Run all solvers simultaneously for fast results
 
@@ -27,6 +32,9 @@ Connections is a word puzzle game where you must group 16 words into 4 categorie
 - **SQLAlchemy** - ORM for persistence
 - **Pydantic** - Data validation
 - **Uvicorn** - ASGI server
+- **Gensim** - Word2Vec embeddings (300-dim Google News corpus, 1.6GB)
+- **Scikit-learn** - Clustering algorithms and dimensionality reduction
+- **NumPy/SciPy** - Numerical computation and distance metrics
 
 ## Project Structure
 
@@ -130,6 +138,19 @@ Each solver shows:
 - **Category Matches**: Number of perfectly matched categories (0-4)
 - **Exact Match**: Whether all 4 categories were perfect
 - **Per-Category Scores**: Precision, recall, and F1 for each category
+
+### Cluster Solver Explainability
+
+The cluster solver provides transparency into its decision-making process:
+
+**Algorithm Selection**: Shows which clustering algorithm was chosen and why:
+- **K-Means**: Default for well-separated, spherical clusters
+- **Agglomerative**: For overlapping or non-spherical clusters (separation ratio < 1.2)
+- **DBSCAN**: For varying density clusters (distance CV > 0.4)
+
+**Cluster Quality**: Displays confidence scores (0-100%) for each predicted category based on cluster cohesion.
+
+**Embedding Visualization**: 2D scatter plot (t-SNE projection) shows word relationships in semantic space. Outliers (words far from cluster centers) are highlighted with red borders.
 
 ### Example Puzzle
 

@@ -1,6 +1,6 @@
 """Evaluation and metrics for solver results."""
-from connections_solver.evaluation.comparator import compare_solver_result
-from connections_solver.evaluation.metrics import (
+from .comparator import compare_solver_result
+from .metrics import (
     calculate_precision_recall_f1,
     find_best_matching_category,
     evaluate_category_match,

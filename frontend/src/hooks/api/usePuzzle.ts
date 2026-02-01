@@ -109,7 +109,7 @@ export const usePuzzle = () => {
    * }
    */
   const solveWithAllSolvers = async (puzzleId: string, solvers: SolverInfo[]) => {
-    const promises = solvers.map((solver) => solvePuzzle(puzzleId, solver.name));
+    const promises = solvers.map((solver) => solvePuzzle(puzzleId, solver.solver_type));
     await Promise.allSettled(promises);
   };
 

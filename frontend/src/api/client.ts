@@ -12,13 +12,13 @@ import axios from 'axios';
  * Features:
  * - Base URL set to /api/v1 (proxied to backend in dev)
  * - JSON content type headers
- * - 10 second timeout
+ * - 30 second timeout (increased for Word2Vec model loading)
  * - Error logging interceptor
  */
 export const apiClient = axios.create({
   baseURL: '/api/v1',
   headers: { 'Content-Type': 'application/json' },
-  timeout: 10000,
+  timeout: 30000, // Increased to 30s to allow Word2Vec model to load
 });
 
 // Request/response interceptors for logging, auth, etc.

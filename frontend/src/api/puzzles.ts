@@ -45,3 +45,22 @@ export const listPuzzles = () =>
  */
 export const getPuzzle = (id: string) =>
   apiClient.get<Puzzle>(`/puzzles/${id}`);
+
+/**
+ * Fetches a random puzzle from the wandb connections dataset.
+ *
+ * Returns a random NYT Connections puzzle from the external dataset
+ * without storing it in the database. Each puzzle has 16 words and
+ * 4 categories with difficulty levels (1-4).
+ *
+ * @returns Promise resolving to a random puzzle
+ *
+ * @example
+ * const response = await getRandomPuzzle();
+ * console.log(response.data.words); // ['nets', 'return', 'heat', ...]
+ * console.log(response.data.solution.categories[0].difficulty); // 1 (Yellow/Easy)
+ *
+ * @throws {Error} If external source is unavailable (503) or data format is invalid (502)
+ */
+export const getRandomPuzzle = () =>
+  apiClient.get<Puzzle>('/puzzles/random');

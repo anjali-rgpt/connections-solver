@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { CategoryInput } from './CategoryInput';
 import { usePuzzle } from '@/hooks/api/usePuzzle';
 import { useSolvers } from '@/hooks/api/useSolvers';
+import { getRandomPuzzle } from '@/api/puzzles';
 import type { CategoryInput as CategoryInputType } from './types';
 
 /**
@@ -24,6 +25,7 @@ import type { CategoryInput as CategoryInputType } from './types';
 export const PuzzleForm: React.FC = () => {
   const { createPuzzle, solveWithAllSolvers } = usePuzzle();
   const { data: solversData } = useSolvers();
+  const [isLoadingRandom, setIsLoadingRandom] = useState(false);
 
   // Initialize 4 empty categories
   const [categories, setCategories] = useState<CategoryInputType[]>(
@@ -101,8 +103,53 @@ export const PuzzleForm: React.FC = () => {
     );
   };
 
+  const handleLoadRandom = async () => {
+    setIsLoadingRandom(true);
+    try {
+      const response = await getRandomPuzzle();
+      const puzzle = response.data;
+
+      // Populate form with puzzle data
+      const loadedCategories = puzzle.solution.categories.map((cat) => ({
+        name: cat.name,
+        words: cat.words,
+      }));
+
+      setCategories(loadedCategories);
+    } catch (error) {
+      console.error('Failed to load random puzzle:', error);
+      alert('Failed to load random puzzle. Please try again.');
+    } finally {
+      setIsLoadingRandom(false);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit}>
+      {/* Load Random Puzzle Button */}
+      <button
+        type="button"
+        onClick={handleLoadRandom}
+        disabled={isLoadingRandom}
+        className="w-full mb-4 bg-purple-600 text-white py-3 rounded-lg font-semibold
+          hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed
+          transition-colors flex items-center justify-center gap-2"
+      >
+        {isLoadingRandom ? (
+          <>Loading Random Puzzle...</>
+        ) : (
+          <>
+            <span>🎲</span>
+            <span>Load Random NYT Puzzle</span>
+          </>
+        )}
+      </button>
+
+      <div className="mb-4 text-xs text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
+        <p className="font-semibold text-blue-800 mb-1">💡 Tip: Multi-word phrases</p>
+        <p>You can use multi-word phrases like "NEW YORK" or "HOT DOG". The solver will automatically handle them.</p>
+      </div>
+
       {categories.map((category, index) => (
         <CategoryInput
           key={index}

@@ -7,6 +7,8 @@ import React, { useMemo } from 'react';
 import { WordGrid } from '@/components/puzzle';
 import { EvaluationScore } from '@/components/evaluation';
 import { ProgressBar } from '@/components/common';
+import { ClusterAnalysis } from '@/components/solver/ClusterAnalysis';
+import { ClusterVisualization } from '@/components/solver/ClusterVisualization';
 import { usePuzzleStore } from '@/stores/puzzleStore';
 import { shuffleArray } from '@/utils/array';
 import { formatExecutionTime, formatSolverName } from '@/utils/formatting';
@@ -31,7 +33,7 @@ import type { SolverGridProps } from './types';
  */
 export const SolverGrid: React.FC<SolverGridProps> = ({ solver }) => {
   const { currentPuzzle, solverStates } = usePuzzleStore();
-  const solverState = solverStates[solver.name];
+  const solverState = solverStates[solver.solver_type];
 
   // Format solver name for display
   const formattedName = formatSolverName(solver.name);
@@ -109,6 +111,14 @@ export const SolverGrid: React.FC<SolverGridProps> = ({ solver }) => {
               {formatExecutionTime(solverState.result.execution_time_ms)}
             </span>
           </div>
+
+          {/* Cluster solver explainability */}
+          {solver.solver_type === 'cluster' && solverState.result.solver_metadata && (
+            <div className="mt-6">
+              <ClusterAnalysis metadata={solverState.result.solver_metadata} />
+              <ClusterVisualization metadata={solverState.result.solver_metadata} />
+            </div>
+          )}
 
           {/* Evaluation metrics */}
           {solverState.evaluation && (

@@ -76,6 +76,7 @@ class SolverResult(BaseModel):
         predicted_categories: List of 4 predicted category groupings
         execution_time_ms: Time taken to solve in milliseconds
         solver_config: Optional configuration used by the solver
+        solver_metadata: Optional metadata about solver's decision-making process
         solved_at: Timestamp when the puzzle was solved
     """
 
@@ -87,6 +88,7 @@ class SolverResult(BaseModel):
     )
     execution_time_ms: float
     solver_config: Optional[Dict[str, Any]] = None
+    solver_metadata: Optional[Dict[str, Any]] = None
     solved_at: datetime = Field(default_factory=datetime.utcnow)
 
 
