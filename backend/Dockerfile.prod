@@ -24,6 +24,7 @@ COPY backend/src/ ./src/
 
 # Install dependencies in a virtual environment
 # Using venv ensures isolation and smaller final image
+# Installing package without specifying groups excludes dev dependencies
 RUN uv venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 RUN uv pip install --no-cache .
@@ -52,7 +53,10 @@ COPY --from=builder /opt/venv /opt/venv
 
 # Copy application code
 COPY backend/src/ ./src/
-COPY backend/data/ ./data/
+
+# Create data directory structure (don't copy from build context to avoid conflicts)
+# The actual database will be persisted via Docker volume
+RUN mkdir -p ./data
 
 # Change ownership to non-root user
 RUN chown -R appuser:appuser /app

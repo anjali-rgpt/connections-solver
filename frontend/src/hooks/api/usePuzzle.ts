@@ -5,12 +5,13 @@
 
 import { useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
 import { createPuzzle as createPuzzleApi, getPuzzle } from '@/api/puzzles';
 import { solvePuzzle as solvePuzzleApi } from '@/api/solvers';
 import { evaluateSolve } from '@/api/evaluations';
 import { createAbortController } from '@/api';
 import { usePuzzleStore } from '@/stores/puzzleStore';
-import type { CreatePuzzleRequest, SolverInfo } from '@/types/api';
+import type { CreatePuzzleRequest, SolverInfo, Puzzle } from '@/types/api';
 
 /**
  * Custom hook for managing puzzle operations.
@@ -67,10 +68,10 @@ export const usePuzzle = () => {
       const response = await createPuzzleApi(data);
       return response.data;
     },
-    onSuccess: (puzzle) => {
+    onSuccess: (puzzle: Puzzle) => {
       setPuzzle(puzzle);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Failed to create puzzle:', error);
     },
   });
@@ -86,7 +87,7 @@ export const usePuzzle = () => {
    * - Confusing UI states
    */
   const cancelAllSolvers = () => {
-    solverAbortControllersRef.current.forEach((controller, solverType) => {
+    solverAbortControllersRef.current.forEach((controller: AbortController, solverType: string) => {
       console.log(`Cancelling solver: ${solverType}`);
       controller.abort();
     });
@@ -133,9 +134,12 @@ export const usePuzzle = () => {
 
       // Remove controller after successful completion
       solverAbortControllersRef.current.delete(solverType);
-    } catch (error) {
-      // Handle cancellation gracefully
-      if (error instanceof Error && error.name === 'CanceledError') {
+    } catch (error: unknown) {
+      // Handle cancellation gracefully - check for both Axios cancellation types
+      if (
+        (error instanceof Error && error.name === 'CanceledError') ||
+        (error instanceof AxiosError && error.code === 'ERR_CANCELED')
+      ) {
         console.log(`Solver ${solverType} was cancelled`);
         setSolverError(solverType, 'Cancelled');
       } else {
@@ -145,6 +149,9 @@ export const usePuzzle = () => {
 
       // Clean up controller
       solverAbortControllersRef.current.delete(solverType);
+    } finally {
+      // Always set loading to false
+      setSolverLoading(solverType, false);
     }
   };
 
@@ -179,10 +186,10 @@ export const usePuzzle = () => {
       const response = await getPuzzle(puzzleId);
       return response.data;
     },
-    onSuccess: (puzzle) => {
+    onSuccess: (puzzle: Puzzle) => {
       setPuzzle(puzzle);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Failed to load puzzle:', error);
     },
   });

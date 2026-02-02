@@ -57,24 +57,22 @@ RATE_LIMIT_EXPENSIVE = "10/minute"
 RATE_LIMIT_READ = "60/minute"
 
 
-def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:
+def rate_limit_exceeded_handler(_request: Request, exc: RateLimitExceeded) -> Response:
     """
     Custom handler for rate limit exceeded errors.
 
     **Why we need this:**
     - Provides clear error messages to users
-    - Includes retry information (when they can try again)
-    - Returns proper HTTP 429 status with headers
+    - Returns proper HTTP 429 status with Retry-After header
     - Logs abuse attempts for monitoring
 
     **Headers returned:**
-    - X-RateLimit-Limit: Maximum requests allowed
-    - X-RateLimit-Remaining: Requests left in current window
-    - X-RateLimit-Reset: Unix timestamp when limit resets
     - Retry-After: Seconds until user can retry
 
+    Note: SlowAPI provides rate limit details through its own mechanisms.
+
     Args:
-        request: The incoming request
+        _request: The incoming request (unused, required by handler signature)
         exc: The rate limit exception
 
     Returns:
@@ -84,7 +82,7 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Res
         status_code=429,
         content={
             "error": "Rate limit exceeded",
-            "message": f"Too many requests. Please try again later.",
+            "message": "Too many requests. Please try again later.",
             "detail": str(exc),
         },
         headers={

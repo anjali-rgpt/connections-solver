@@ -122,6 +122,18 @@ apiClient.interceptors.response.use(
       // Wait before retrying
       await wait(delay);
 
+      // Check if request was cancelled during the wait
+      if (config.signal?.aborted) {
+        const cancelError = new AxiosError(
+          'Request cancelled',
+          'ERR_CANCELED',
+          config,
+          undefined,
+          undefined
+        );
+        return Promise.reject(cancelError);
+      }
+
       // Retry the request
       return apiClient(config);
     }
