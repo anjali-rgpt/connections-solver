@@ -1,0 +1,79 @@
+# Production Dockerfile for Backend
+# Multi-stage build for optimized image size
+
+# ============================================
+# Stage 1: Builder
+# ============================================
+FROM python:3.11-slim AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Set environment variables for build
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install UV package manager
+RUN pip install --no-cache-dir uv
+
+# Copy project files
+COPY pyproject.toml README.md ./
+COPY backend/src/ ./src/
+
+# Install dependencies in a virtual environment
+# Using venv ensures isolation and smaller final image
+# Installing package without specifying groups excludes dev dependencies
+RUN uv venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN uv pip install --no-cache .
+
+# ============================================
+# Stage 2: Production Runtime
+# ============================================
+FROM python:3.11-slim AS runtime
+
+# Set working directory
+WORKDIR /app
+
+# Create non-root user for security
+# Running as non-root reduces security risks
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/opt/venv/bin:$PATH" \
+    LOG_LEVEL=INFO \
+    ENVIRONMENT=production
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+
+# Copy application code
+COPY backend/src/ ./src/
+
+# Create data directory structure (don't copy from build context to avoid conflicts)
+# The actual database will be persisted via Docker volume
+RUN mkdir -p ./data
+
+# Change ownership to non-root user
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+# Docker will periodically check if the container is healthy
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"
+
+# Run the application
+# Using exec form ensures proper signal handling
+# Single worker mode to avoid rate limit inconsistencies with memory:// storage
+# For multi-worker deployments, configure Redis in rate_limit.py
+CMD ["uvicorn", "src.connections_solver.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

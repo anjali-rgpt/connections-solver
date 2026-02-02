@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { usePuzzles } from '@/hooks/api/usePuzzles';
 import { usePuzzle } from '@/hooks/api/usePuzzle';
 import { useSolvers } from '@/hooks/api/useSolvers';
+import { useToast } from '@/components/common';
 
 /**
  * PuzzleLoader Component
@@ -25,15 +26,17 @@ export const PuzzleLoader: React.FC = () => {
   const { data: puzzles, isLoading, error, refetch } = usePuzzles();
   const { data: solversData } = useSolvers();
   const { loadAndSolvePuzzle } = usePuzzle();
+  const { success, error: showError } = useToast();
 
   const handleLoad = async () => {
     if (!selectedPuzzleId || !solversData?.solvers) return;
 
     try {
       await loadAndSolvePuzzle(selectedPuzzleId, solversData.solvers);
+      success('Puzzle solved successfully with all solvers');
     } catch (error) {
       console.error('Failed to load puzzle:', error);
-      alert('Failed to load puzzle. Please try again.');
+      showError('Failed to load puzzle. Please try again.');
     }
   };
 

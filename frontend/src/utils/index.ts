@@ -5,3 +5,4 @@
 
 export * from './array';
 export * from './formatting';
+export * from './validation';

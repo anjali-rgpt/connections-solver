@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Header, Sidebar } from '@/components/layout';
 import { SolverGrid } from '@/components/solver';
+import { ErrorBoundary, ToastProvider, ToastContainer } from '@/components/common';
 import { useSolvers } from '@/hooks/api/useSolvers';
 
 // Create a client
@@ -87,9 +88,14 @@ const AppContent: React.FC = () => {
  */
 const App: React.FC = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AppContent />
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <ToastProvider position="top-right">
+        <QueryClientProvider client={queryClient}>
+          <AppContent />
+          <ToastContainer />
+        </QueryClientProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 };
 

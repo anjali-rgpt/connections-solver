@@ -12,10 +12,14 @@ import type { WordCellProps } from './types';
  * Displays a single word in the grid with appropriate styling.
  * Color-coded based on category assignment.
  *
+ * **Performance:**
+ * Wrapped in React.memo to prevent unnecessary re-renders.
+ * Only re-renders when word or colorClass actually changes.
+ *
  * @param word - The word to display
  * @param colorClass - Tailwind CSS classes for background and border colors
  */
-export const WordCell: React.FC<WordCellProps> = ({ word, colorClass }) => {
+export const WordCell: React.FC<WordCellProps> = React.memo(({ word, colorClass }) => {
   return (
     <div
       className={`${colorClass} border-2 rounded-lg p-4 flex items-center
@@ -26,4 +30,4 @@ export const WordCell: React.FC<WordCellProps> = ({ word, colorClass }) => {
       {word}
     </div>
   );
-};
+});

@@ -1,0 +1,107 @@
+# Production Dockerfile for Frontend
+# Multi-stage build: Build stage + Nginx serving
+
+# ============================================
+# Stage 1: Build
+# ============================================
+FROM node:20-alpine AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files first (for better caching)
+# Docker caches layers, so if package files don't change,
+# it won't reinstall dependencies
+COPY package*.json ./
+
+# Install ALL dependencies (including devDependencies for build tools)
+# TypeScript, Vite, and other build tools are required for npm run build
+RUN npm ci && npm cache clean --force
+
+# Copy application code
+COPY . .
+
+# Build the application
+# This creates an optimized production build in /app/dist
+ENV NODE_ENV=production
+RUN npm run build
+
+# ============================================
+# Stage 2: Production Runtime with Nginx
+# ============================================
+FROM nginx:alpine AS runtime
+
+# Copy custom nginx configuration
+COPY <<'EOF' /etc/nginx/conf.d/default.conf
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Gzip compression for better performance
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml text/javascript;
+    gzip_min_length 1000;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # Cache static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        # Security headers must be repeated in location block (add_header is not inherited)
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+    }
+
+    # SPA routing: Serve index.html for all routes
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # API proxy (if backend is accessible from nginx)
+    # Uncomment and configure if needed
+    # location /api {
+    #     proxy_pass http://backend:8000;
+    #     proxy_set_header Host $host;
+    #     proxy_set_header X-Real-IP $remote_addr;
+    #     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    # }
+
+    # Health check endpoint
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
+}
+EOF
+
+# Copy built files from builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Create non-root user for nginx
+RUN chown -R nginx:nginx /usr/share/nginx/html && \
+    chown -R nginx:nginx /var/cache/nginx && \
+    chown -R nginx:nginx /var/log/nginx && \
+    chown -R nginx:nginx /etc/nginx/conf.d && \
+    touch /var/run/nginx.pid && \
+    chown -R nginx:nginx /var/run/nginx.pid
+
+# Switch to non-root user
+USER nginx
+
+# Expose port
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost/health || exit 1
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

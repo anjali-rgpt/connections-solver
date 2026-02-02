@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { CategoryInput } from './CategoryInput';
 import { usePuzzle } from '@/hooks/api/usePuzzle';
 import { useSolvers } from '@/hooks/api/useSolvers';
+import { useToast } from '@/components/common';
 import { getRandomPuzzle } from '@/api/puzzles';
 import type { CategoryInput as CategoryInputType } from './types';
 
@@ -25,6 +26,7 @@ import type { CategoryInput as CategoryInputType } from './types';
 export const PuzzleForm: React.FC = () => {
   const { createPuzzle, solveWithAllSolvers } = usePuzzle();
   const { data: solversData } = useSolvers();
+  const { success, error: showError } = useToast();
   const [isLoadingRandom, setIsLoadingRandom] = useState(false);
 
   // Initialize 4 empty categories
@@ -62,7 +64,7 @@ export const PuzzleForm: React.FC = () => {
     );
 
     if (!isValid) {
-      alert('Please fill in all category names and words');
+      showError('Please fill in all category names and words');
       return;
     }
 
@@ -86,11 +88,12 @@ export const PuzzleForm: React.FC = () => {
 
       // Solve with all available solvers in parallel
       if (solversData?.solvers && puzzle) {
+        success('Puzzle created successfully! Solving with all solvers...');
         await solveWithAllSolvers(puzzle.puzzle_id, solversData.solvers);
       }
     } catch (error) {
       console.error('Failed to create puzzle or solve:', error);
-      alert('Failed to create puzzle. Please try again.');
+      showError('Failed to create puzzle. Please try again.');
     }
   };
 
@@ -118,7 +121,7 @@ export const PuzzleForm: React.FC = () => {
       setCategories(loadedCategories);
     } catch (error) {
       console.error('Failed to load random puzzle:', error);
-      alert('Failed to load random puzzle. Please try again.');
+      showError('Failed to load random puzzle. Please try again.');
     } finally {
       setIsLoadingRandom(false);
     }
