@@ -3,7 +3,7 @@
  * @module components/common/Toast/ToastContext
  */
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import type { Toast, ToastOptions, ToastPosition } from './types';
 
 /**
@@ -86,13 +86,30 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
   maxToasts = 5,
 }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  
+  // Track timeout IDs for cleanup
+  const toastTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   /**
    * Generate a unique ID for a toast
    */
   const generateId = (): string => {
-    return `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `toast-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   };
+
+  /**
+   * Dismiss a specific toast
+   */
+  const dismiss = useCallback((id: string): void => {
+    // Clear the timer if it exists
+    const timer = toastTimersRef.current.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      toastTimersRef.current.delete(id);
+    }
+    
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
 
   /**
    * Add a new toast notification
@@ -122,28 +139,39 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
 
       // Auto-dismiss after duration (if duration > 0)
       if (duration > 0) {
-        setTimeout(() => {
+        const timer = setTimeout(() => {
           dismiss(id);
         }, duration);
+        
+        // Store timer for cleanup
+        toastTimersRef.current.set(id, timer);
       }
 
       return id;
     },
-    [maxToasts]
+    [maxToasts, dismiss]
   );
-
-  /**
-   * Dismiss a specific toast
-   */
-  const dismiss = useCallback((id: string): void => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  }, []);
 
   /**
    * Dismiss all toasts
    */
   const dismissAll = useCallback((): void => {
+    // Clear all timers
+    toastTimersRef.current.forEach((timer) => clearTimeout(timer));
+    toastTimersRef.current.clear();
+    
     setToasts([]);
+  }, []);
+
+  /**
+   * Cleanup effect - clear all timers on unmount
+   */
+  useEffect(() => {
+    return () => {
+      // Clear all timers when component unmounts
+      toastTimersRef.current.forEach((timer) => clearTimeout(timer));
+      toastTimersRef.current.clear();
+    };
   }, []);
 
   /**

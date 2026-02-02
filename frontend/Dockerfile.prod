@@ -14,9 +14,9 @@ WORKDIR /app
 # it won't reinstall dependencies
 COPY package*.json ./
 
-# Install dependencies
-# Using --frozen-lockfile ensures reproducible builds
-RUN npm ci --only=production && npm cache clean --force
+# Install ALL dependencies (including devDependencies for build tools)
+# TypeScript, Vite, and other build tools are required for npm run build
+RUN npm ci && npm cache clean --force
 
 # Copy application code
 COPY . .
@@ -53,6 +53,10 @@ server {
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
+        # Security headers must be repeated in location block (add_header is not inherited)
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
     }
 
     # SPA routing: Serve index.html for all routes

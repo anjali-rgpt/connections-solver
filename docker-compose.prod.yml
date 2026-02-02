@@ -46,9 +46,8 @@ services:
     networks:
       - app-network
     healthcheck:
-      # Using curl instead of wget as it's more commonly available in base images
-      # If using nginx alpine, install curl with: RUN apk add --no-cache curl
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      # Using wget which is available in nginx:alpine by default
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s
       timeout: 3s
       retries: 3

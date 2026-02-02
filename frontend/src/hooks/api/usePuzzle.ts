@@ -103,13 +103,21 @@ export const usePuzzle = () => {
    * @param solverType - Name of solver to use (e.g., "random", "embedding")
    */
   const solvePuzzle = async (puzzleId: string, solverType: string) => {
-    try {
-      // Set loading state
-      setSolverLoading(solverType, true);
+    // Abort any existing request for this solver type before starting a new one
+    const existingController = solverAbortControllersRef.current.get(solverType);
+    if (existingController) {
+      existingController.abort();
+    }
 
-      // Create abort controller for this solver
-      const abortController = createAbortController();
-      solverAbortControllersRef.current.set(solverType, abortController);
+    // Create new abort controller for this solver
+    const abortController = createAbortController();
+    solverAbortControllersRef.current.set(solverType, abortController);
+
+    try {
+      // Set loading state (only if controller still matches)
+      if (solverAbortControllersRef.current.get(solverType) === abortController) {
+        setSolverLoading(solverType, true);
+      }
 
       // Execute solver with cancellation support
       const solveResponse = await solvePuzzleApi(
@@ -120,8 +128,10 @@ export const usePuzzle = () => {
       );
       const solverResult = solveResponse.data;
 
-      // Update result
-      setSolverResult(solverType, solverResult);
+      // Update result (only if controller still matches - prevents old requests from overwriting)
+      if (solverAbortControllersRef.current.get(solverType) === abortController) {
+        setSolverResult(solverType, solverResult);
+      }
 
       // Fetch evaluation (also cancellable)
       const evalResponse = await evaluateSolve(solverResult.solve_id, {
@@ -129,29 +139,44 @@ export const usePuzzle = () => {
       });
       const evaluation = evalResponse.data;
 
-      // Update evaluation
-      setSolverEvaluation(solverType, evaluation);
-
-      // Remove controller after successful completion
-      solverAbortControllersRef.current.delete(solverType);
-    } catch (error: unknown) {
-      // Handle cancellation gracefully - check for both Axios cancellation types
-      if (
-        (error instanceof Error && error.name === 'CanceledError') ||
-        (error instanceof AxiosError && error.code === 'ERR_CANCELED')
-      ) {
-        console.log(`Solver ${solverType} was cancelled`);
-        setSolverError(solverType, 'Cancelled');
-      } else {
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        setSolverError(solverType, message);
+      // Update evaluation (only if controller still matches)
+      if (solverAbortControllersRef.current.get(solverType) === abortController) {
+        setSolverEvaluation(solverType, evaluation);
       }
 
-      // Clean up controller
-      solverAbortControllersRef.current.delete(solverType);
+      // Remove controller after successful completion (only if it still matches)
+      if (solverAbortControllersRef.current.get(solverType) === abortController) {
+        solverAbortControllersRef.current.delete(solverType);
+      }
+    } catch (error: unknown) {
+      // Handle cancellation gracefully - check for both Axios cancellation types
+      const isCancelled =
+        (error instanceof Error && error.name === 'CanceledError') ||
+        (error instanceof AxiosError && error.code === 'ERR_CANCELED');
+
+      if (isCancelled) {
+        console.log(`Solver ${solverType} was cancelled`);
+        // Only update if controller still matches
+        if (solverAbortControllersRef.current.get(solverType) === abortController) {
+          setSolverError(solverType, 'Cancelled');
+        }
+      } else {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        // Only update if controller still matches
+        if (solverAbortControllersRef.current.get(solverType) === abortController) {
+          setSolverError(solverType, message);
+        }
+      }
+
+      // Clean up controller (only if it still matches)
+      if (solverAbortControllersRef.current.get(solverType) === abortController) {
+        solverAbortControllersRef.current.delete(solverType);
+      }
     } finally {
-      // Always set loading to false
-      setSolverLoading(solverType, false);
+      // Always set loading to false (only if controller still matches)
+      if (solverAbortControllersRef.current.get(solverType) === abortController) {
+        setSolverLoading(solverType, false);
+      }
     }
   };
 

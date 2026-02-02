@@ -33,7 +33,7 @@ export const PuzzleLoader: React.FC = () => {
 
     try {
       await loadAndSolvePuzzle(selectedPuzzleId, solversData.solvers);
-      success('Puzzle loaded successfully! Solving with all solvers...');
+      success('Puzzle solved successfully with all solvers');
     } catch (error) {
       console.error('Failed to load puzzle:', error);
       showError('Failed to load puzzle. Please try again.');

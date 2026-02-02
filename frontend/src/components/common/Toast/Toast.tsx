@@ -3,7 +3,7 @@
  * @module components/common/Toast/Toast
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import type { Toast as ToastType } from './types';
 
 interface ToastProps {
